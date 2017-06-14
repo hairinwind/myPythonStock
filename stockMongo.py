@@ -1,8 +1,8 @@
 import pymongo
 
 client = pymongo.MongoClient()
-# stockDb = client.stock
-stockDb = client.bulk_example
+stockDb = client.stock
+# stockDb = client.bulk_example
 
 def getAllSymbols():
     return stockDb.symbol.find()
@@ -15,7 +15,7 @@ def insertSymbols(symbols):
     
 def updateSymbolQuoteSource(symbol, quoteSource):
     symbol = findSymbol(symbol)
-    if (symbol != None):
+    if (symbol is not None):
         symbol['quoteSource'] = quoteSource
         print(symbol)
         stockDb.symbol.save(symbol)

@@ -1,29 +1,31 @@
-import json
 import datetime as dt
 import quandl
 quandl.ApiConfig.api_key = "ptncathabbVjauEnNMaf"
 # import pandas_datareader.data as web
-from stockMongo import getAllSymbols, insertQuotes, findSymbol
+from stockMongo import getAllSymbols, findSymbol
 from getYahooQuotes import getQuotesFromYahoo
-from pathlib import Path
+import fileUtil
 
 def isQuandl(symbol):
     return 'quoteSource' in symbol and symbol['quoteSource'].split("/")[0] == 'quandl'
 
-def getQuotesFromQuandl(symbolDocument):
+def getQuotesFromQuandl(symbolDocument, start, end):
     quoteSource = symbolDocument['quoteSource']
     symbol = symbolDocument['Symbol']
     datasetCode = quoteSource.split("/")[1]
-    df = quandl.get(datasetCode + "/" + symbol)
+    if (start is not None and end is not None):
+        df = quandl.get(datasetCode + "/" + symbol, start_date=start, end_date=end)
+    else:
+        df = quandl.get(datasetCode + "/" + symbol)
     df['Symbol'] = symbol
     df=df.rename(columns = {'Adj. Volume':'Adj Volume', 'Adj. Low':'Adj Low', 'Adj. Open':'Adj Open', 'Adj. Close':'Adj Close', 'Adj. High':'Adj High' })
     return df
 
 def getQuotes(symbol, start, end):
     if(isQuandl(symbol)):
-        df = getQuotesFromQuandl(symbol)
+        df = getQuotesFromQuandl(symbol, start, end)
     else:
-        df = getQuotesFromYahoo(symbol['Symbol'])
+        df = getQuotesFromYahoo(symbol['Symbol'], start, end)
     return df
     
 def convertToJson(df):
@@ -33,7 +35,7 @@ def convertToJson(df):
             records['Date'] = records['Date'].dt.strftime('%Y-%m-%d')
         return records.to_dict(orient='records')
 
-def fetchAndStoreQuotes(symbol, start, end):
+def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
     retryCount = 0
     quotes = None
     while (retryCount < 5):
@@ -50,27 +52,19 @@ def fetchAndStoreQuotes(symbol, start, end):
     if (quotes is None):
         print(symbol['Symbol'], 'does not have any quote in the period...')
     else:
-        '''print(len(quotesJson), ' quotes were got...')
-        insertQuotes(quotesJson)
-        print(len(quotes), ' quotes were inserted...')'''
-        csvName = symbol['Symbol']
-        if(csvName == 'PRN'):
-            csvName += '_quote'
-        quotes.to_csv('quotes/{}.csv'.format(csvName), index=False) 
+        fileUtil.saveQuotesToCsv(symbol['Symbol'], quotes, start, end)
 
 if __name__ == '__main__':        
-    start = dt.datetime(2017,1,1)
-    end = dt.datetime(2017,6,8)
-    symbols = getAllSymbols()    
-    '''
+    start = '2017-06-13'
+    end = '2017-06-13'
+    symbols = getAllSymbols()
+       
+    
     for symbol in symbols:
-        if (symbol['Symbol'] == 'PRN'):
-            continue
-        csvFile = Path("quotes/{}.csv".format(symbol['Symbol']))
-        if not csvFile.exists():
-            print(symbol['Symbol'])
-            fetchAndStoreQuotes(symbol,start, end)
-        else:
-            print(symbol['Symbol'],'already exists')
+        # csvFile = Path("quotes/{}.csv".format(symbol['Symbol']))
+        # if not csvFile.exists():
+        print(symbol['Symbol'])
+        fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('AAAP'),start, end)        
+    fetchAndStoreQuotes(findSymbol('BOLT'), start, end)        
+    '''

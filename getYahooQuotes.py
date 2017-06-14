@@ -60,30 +60,57 @@ def get_cookie_crumb(symbol):
 
 def get_data(symbol, start_date, end_date, cookie, crumb):
     url = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%s&period2=%s&interval=1d&events=history&crumb=%s" % (symbol, start_date, end_date, crumb)
+    print(url)
     response = requests.get(url, cookies=cookie)
     data = []
     for block in response.iter_lines():
         data.append(block.decode("utf-8").split(","))
     if (len(data) > 1):
         try:
-            return pd.DataFrame(data[1:], columns=data[0])
+            df = pd.DataFrame(data[1:], columns=data[0])
+            df['Symbol'] = symbol
+            return df
         except Exception as e:
             print(pd)
 
 
 def get_now_epoch():
     # @see https://www.linuxquestions.org/questions/programming-9/python-datetime-to-epoch-4175520007/#post5244109
-    return int(time.mktime(datetime.datetime.now().timetuple()))
+    # return int(time.mktime(datetime.datetime.now().timetuple()))
+    return int(time.time())
 
+def getTimeNumber(date):
+    return int((date - datetime.datetime(1970,1,1)).total_seconds())
 
-def getQuotesFromYahoo(symbol):
+def parseDate(dateStr):
+    date = datetime.datetime.strptime(dateStr, '%Y-%m-%d')
+    return date.replace(hour=7)
+
+def getQuotesFromYahooInternal(symbol, start, end):
     start_date = 0
     end_date = get_now_epoch()
+    if start is not None:
+        start_date = getTimeNumber(parseDate(start))
+    if end is not None:
+        end_date = getTimeNumber(parseDate(end))
     cookie, crumb = get_cookie_crumb(symbol)
+    print('symbol', symbol)
     print('crumb', crumb)
     df = get_data(symbol, start_date, end_date, cookie, crumb)
-    df.set_index(['Date'])
+    df.set_index(['Date'], inplace=True)
     return df
+
+# symbol: ATI
+# start: 2017-06-12
+# end: 2017-06-12
+def getQuotesFromYahoo(symbol, start, end):
+    retryCount = 0
+    while retryCount < 5 :
+        try:
+            return getQuotesFromYahooInternal(symbol, start, end)
+        except Exception as e:
+            print(str(e))
+            retryCount += 1
         
 if __name__ == '__main__':
     # If we have at least one parameter go ahead and loop overa all the parameters assuming they are symbols
