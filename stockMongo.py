@@ -2,7 +2,6 @@ import pymongo
 
 client = pymongo.MongoClient()
 stockDb = client.stock
-# stockDb = client.bulk_example
 
 def getAllSymbols():
     return stockDb.symbol.find()

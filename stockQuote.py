@@ -3,7 +3,7 @@ import quandl
 quandl.ApiConfig.api_key = "ptncathabbVjauEnNMaf"
 # import pandas_datareader.data as web
 from stockMongo import getAllSymbols, findSymbol
-from getYahooQuotes import getQuotesFromYahoo
+from getYahooQuotes import getQuotesFromYahoo 
 import fileUtil
 
 def isQuandl(symbol):
@@ -59,12 +59,12 @@ if __name__ == '__main__':
     end = '2017-06-13'
     symbols = getAllSymbols()
        
-    
+    '''
     for symbol in symbols:
         # csvFile = Path("quotes/{}.csv".format(symbol['Symbol']))
         # if not csvFile.exists():
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('BOLT'), start, end)        
-    '''
+    fetchAndStoreQuotes(findSymbol('YGE'), start, end)        
+    
