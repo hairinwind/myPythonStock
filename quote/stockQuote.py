@@ -2,9 +2,9 @@ import datetime as dt
 import quandl
 quandl.ApiConfig.api_key = "ptncathabbVjauEnNMaf"
 # import pandas_datareader.data as web
-from stockMongo import getAllSymbols, findSymbol
-from getYahooQuotes import getQuotesFromYahoo 
-import fileUtil
+from base.stockMongo import getAllSymbols, findSymbol
+from quote.getYahooQuotes import getQuotesFromYahoo 
+from base import fileUtil
 
 def isQuandl(symbol):
     return 'quoteSource' in symbol and symbol['quoteSource'].split("/")[0] == 'quandl'
@@ -22,10 +22,10 @@ def getQuotesFromQuandl(symbolDocument, start, end):
     return df
 
 def getQuotes(symbol, start, end):
-    if(isQuandl(symbol)):
+    '''if(isQuandl(symbol)):
         df = getQuotesFromQuandl(symbol, start, end)
-    else:
-        df = getQuotesFromYahoo(symbol['Symbol'], start, end)
+    else:'''
+    df = getQuotesFromYahoo(symbol['Symbol'], start, end)
     return df
     
 def convertToJson(df):
@@ -55,8 +55,8 @@ def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
         fileUtil.saveQuotesToCsv(symbol['Symbol'], quotes, start, end)
 
 if __name__ == '__main__':        
-    start = '2017-06-13'
-    end = '2017-06-13'
+    start = '2017-06-19'
+    end = '2017-06-19'
     symbols = getAllSymbols()
        
     '''
@@ -66,5 +66,5 @@ if __name__ == '__main__':
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('YGE'), start, end)        
+    fetchAndStoreQuotes(findSymbol('AABA'), start, end)        
     

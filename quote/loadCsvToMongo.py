@@ -1,5 +1,5 @@
-from stockMongo import insertQuotes
-from stockQuote import convertToJson 
+from base.stockMongo import insertQuotes
+from quote.stockQuote import convertToJson 
 import pandas as pd
 import os
 import shutil
@@ -32,7 +32,7 @@ def isFile(csvFile):
     return os.path.isfile("d:/quotes/{}".format(csvFile))        
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()        
     csvFiles = list(filter(isFile, os.listdir("d:/quotes")))    
+    multiprocessing.freeze_support()        
     with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
         p.map(loadCsv, csvFiles)

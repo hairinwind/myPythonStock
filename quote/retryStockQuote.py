@@ -1,7 +1,7 @@
 import os
-import fileUtil
+from base import fileUtil
 import multiprocessing
-from getYahooQuotes import getQuotesFromYahoo
+from quote.getYahooQuotes import getQuotesFromYahoo
 
 def retryStock(csvFile):
 	symbol, start, end = fileUtil.parse(csvFile)

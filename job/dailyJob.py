@@ -1,8 +1,8 @@
 import multiprocessing
 import functools
 import datetime
-from stockMongo import getAllSymbols
-from stockQuote import fetchAndStoreQuotes
+from base.stockMongo import getAllSymbols
+from quote.stockQuote import fetchAndStoreQuotes
 
 if __name__ == '__main__':      
     print(datetime.datetime.now().strftime("%Y-%m-%d"), "daily job is started...")

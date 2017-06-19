@@ -1,5 +1,5 @@
 import csv
-from stockMongo import insertSymbols
+from base.stockMongo import insertSymbols
 
 def readCsv(csvfile):
     with open(csvfile) as csvfile:

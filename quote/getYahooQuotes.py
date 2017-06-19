@@ -82,17 +82,17 @@ def get_now_epoch():
 def getTimeNumber(date):
     return int((date - datetime.datetime(1970,1,1)).total_seconds())
 
-def parseDate(dateStr):
+def parseDate(dateStr, hour):
     date = datetime.datetime.strptime(dateStr, '%Y-%m-%d')
-    return date.replace(hour=7)
+    return date.replace(hour=hour)
 
 def getQuotesFromYahooInternal(symbol, start, end):
     start_date = 0
     end_date = get_now_epoch()
     if start is not None:
-        start_date = getTimeNumber(parseDate(start))
+        start_date = getTimeNumber(parseDate(start, 7))
     if end is not None:
-        end_date = getTimeNumber(parseDate(end))
+        end_date = getTimeNumber(parseDate(end, 17))
     cookie, crumb = get_cookie_crumb(symbol)
     print('symbol', symbol)
     print('crumb', crumb)

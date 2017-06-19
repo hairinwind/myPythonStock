@@ -1,8 +1,12 @@
 import os
+import pickle
 
 QUOTES_DIR = "d:/quotes/"
 QUOTES_ERROR_DIR = QUOTES_DIR + "error/"
 QUOTES_SUCCESS_DIR = QUOTES_DIR + "success/"
+
+MACHINE_LEARNING_PICKLE = "D:/quotes/pickle/"
+
 
 # parse file name ATI_2017-06-12_2017-06-12.csv, returns ATI 2017-06-12 2017-06-12
 def parse(csvFile):
@@ -16,3 +20,11 @@ def saveQuotesToCsv(symbol, quotes, start, end):
 
 def removeErrorCsv(csvFile):
     os.remove(QUOTES_ERROR_DIR+csvFile)
+    
+def pickleIt(fileName, data):
+    with (open(MACHINE_LEARNING_PICKLE + fileName, "wb")) as f:
+        pickle.dump(data, f)
+        
+def loadPickle(fileName):
+    with (open(MACHINE_LEARNING_PICKLE + fileName, "rb")) as f:
+        return pickle.load(f)
