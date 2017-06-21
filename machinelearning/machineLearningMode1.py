@@ -1,4 +1,5 @@
 from base import stockMongo
+from quote import stockData
 import pandas as pd
 from base import fileUtil
 from collections import Counter
@@ -6,10 +7,11 @@ from sklearn import svm, cross_validation, neighbors
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 
 trainingDataColumns = ['Open', 'High', 'Low', 'Close', 'Volume', '3_mean', '7_mean', '3_mean_volume', '7_mean_volume', 'closeOpenPercentage']
+MINIMUN_MACHINE_LEARNING_NUMBERS = 500
 
 def determineResult(value):
-    threshold1 = 0.015
-    threshold2 = -0.015
+    threshold1 = 0.02
+    threshold2 = -0.02
     if value > threshold1:
         return 1
     if value < threshold2:
@@ -25,6 +27,7 @@ def getInitialData(symbol):
 #extract the dataframe to the featuerset for machine learning
 
 def addValue(df):
+    df = df.apply(pd.to_numeric, errors='ignore')
     df['3_mean'] = df['Close'].rolling(window=3).mean()
     df['7_mean'] = df['Close'].rolling(window=7).mean()
     df['3_mean_volume'] = df['Volume'].rolling(window=3).mean()
@@ -39,11 +42,10 @@ def getFirstRowDate(df):
     return df['Date'].values[0]
 
 def extract_featureset(df):
-    df = df.sort_values(['Date'])
-    df['nextClose'] = df['Close'].shift(-1)
-    df['nextClosePercentage'] = (df['nextClose']-df['Close'])/df['Close']
-    df['result'] = list(map(determineResult, df['nextClosePercentage']))
+    if 'nextClosePercentage' not in df.columns :
+        return None, None, df
     
+    df['result'] = list(map(determineResult, df['nextClosePercentage']))
     df = addValue(df)
 
     # resultList = df['result'].values.tolist()
@@ -59,7 +61,7 @@ def extract_featureset(df):
 
 def extract_featureForPredict(df):
     df = addValue(df)
-    df = df.dropna(how='any')
+    df = df[-1:]
     X = df[trainingDataColumns].values
     return X, df
 
@@ -71,8 +73,12 @@ def getClassifier():
             ])
 
 def getClassifierAccuracy(symbol):
-    X, y, df = extract_featureset(getInitialData(symbol))
-    X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.1)
+    quotes = getInitialData(symbol)
+    if len(quotes) < MINIMUN_MACHINE_LEARNING_NUMBERS :
+        return None, 0
+    
+    X, y, df = extract_featureset(quotes)
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.25)
     clf = getClassifier()
     clf.fit(X_train, y_train)
     confidence=clf.score(X_test, y_test)
@@ -81,7 +87,8 @@ def getClassifierAccuracy(symbol):
 def saveAccuracy(symbol):
     try:
         confidence, trainNumber = getClassifierAccuracy(symbol)
-        stockMongo.saveLearnAccuracy(symbol, 'mode1', confidence, trainNumber)
+        if trainNumber > 0 : 
+            stockMongo.saveLearnAccuracy(symbol, 'mode1', confidence, trainNumber)
     except Exception as e:
         print('...error while saveAccuracy for ', symbol)
         print(str(e))
@@ -94,7 +101,12 @@ def getPickleName(symbol):
 # machine learning train the classifier
 # pickle the classifier for future use
 def initialMachineLearning(symbol):
+    print(symbol)
     X, y, df = extract_featureset(getInitialData(symbol))
+    
+    if len(df) < MINIMUN_MACHINE_LEARNING_NUMBERS or X is None or y is None:
+        return
+    
     lastRecordDate = getLastRowDate(df)
     
     # clf = neighbors.KNeighborsClassifier()
@@ -120,15 +132,19 @@ def continueMachineLearning(symbol):
     
 # get the latest quote from db and do the predict    
 def predict(symbol):    
+    ml_data = fileUtil.loadPickle(getPickleName(symbol))
+    
     quotes = stockMongo.findLatestQuotes(symbol, 7)
     df = pd.DataFrame(list(quotes)[::-1])
     X, df = extract_featureForPredict(df)
-    date = getLastRowDate(df)
     
-    ml_data = fileUtil.loadPickle(getPickleName(symbol))
+    if X is None:
+        return None, None
+    
+    date = getLastRowDate(df)
     if(ml_data['lastRecordDate'] <= date): 
         prediction = ml_data['clf'].predict(X)
-        return prediction
+        return prediction, date
     else:
         raise ValueError('try to predict data already learned...')
 
@@ -151,11 +167,14 @@ if __name__ == '__main__':
         initialMachineLearning(symbol)    
         data = fileUtil.loadPickle(getPickleName(symbol))
         print("last prediction", predict(symbol))
+        # print('confidence', getClassifierAccuracy(symbol))
         print("--------------")
     '''
     
-    symbols = pd.DataFrame(list(stockMongo.getAllSymbols()))['Symbol'].values
+    # symbols = pd.DataFrame(list(stockMongo.getAllSymbols()))['Symbol'].values
+    '''symbols = ["ANDAR"]
     import multiprocessing
     multiprocessing.freeze_support()        
     with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
-        p.map(saveAccuracy, symbols)
+        # p.map(saveAccuracy, symbols)
+        p.map(initialMachineLearning, symbols)'''

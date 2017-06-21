@@ -1,10 +1,20 @@
-import datetime as dt
+import multiprocessing
+
 import quandl
+
+from base import fileUtil
+from base import stockMongo
+from base.stockMongo import getAllSymbols, findSymbol
+import datetime as dt
+import pandas as pd
+import numpy as np
+from quote import stockData
+from quote.getYahooQuotes import getQuotesFromYahoo 
+
+
 quandl.ApiConfig.api_key = "ptncathabbVjauEnNMaf"
 # import pandas_datareader.data as web
-from base.stockMongo import getAllSymbols, findSymbol
-from quote.getYahooQuotes import getQuotesFromYahoo 
-from base import fileUtil
+
 
 def isQuandl(symbol):
     return 'quoteSource' in symbol and symbol['quoteSource'].split("/")[0] == 'quandl'
@@ -28,7 +38,7 @@ def getQuotes(symbol, start, end):
     df = getQuotesFromYahoo(symbol['Symbol'], start, end)
     return df
     
-def convertToJson(df):
+def toDict(df):
     if (len(df) > 0):
         records = df.reset_index()
         if (isinstance(records['Date'][0], dt.date)):
@@ -54,17 +64,42 @@ def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
     else:
         fileUtil.saveQuotesToCsv(symbol['Symbol'], quotes, start, end)
 
-if __name__ == '__main__':        
-    start = '2017-06-19'
-    end = '2017-06-19'
+def getAndSaveNextTxDayData(quotes):
+    df = pd.DataFrame(list(quotes))
+    df = stockData.weaveInNextTxDayData(df)
+    if len(df) > 1:
+        values = df[['_id', 'nextClose', 'nextClosePercentage']].values
+        for value in values:
+            if pd.notnull(value[1]) and pd.notnull(value[2]):
+                stockMongo.updateQuoteNextClose(value[0], value[1], value[2])
+
+def initialNextTxDayData(symbol):
+    quotes = stockMongo.findAllQuotesBySymbol(symbol['Symbol'])
+    try:
+        getAndSaveNextTxDayData(quotes)
+    except Exception as e:
+        print(symbol['Symbol'], 'has error......')
+        print(str(e))
+
+# this is the method to weave in the next day close price      
+def initialAllNextTxDayData():
     symbols = getAllSymbols()
+    with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
+        p.map(initialNextTxDayData, symbols)
+        
+
+if __name__ == '__main__':        
+    start = '1960-01-01'
+    end = '2017-06-19'
        
     '''
+    symbols = getAllSymbols()
     for symbol in symbols:
         # csvFile = Path("quotes/{}.csv".format(symbol['Symbol']))
         # if not csvFile.exists():
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('AABA'), start, end)        
+    # fetchAndStoreQuotes(findSymbol('^NYA'), start, end)        
     
+    initialAllNextTxDayData()

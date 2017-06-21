@@ -1,0 +1,19 @@
+collect history for index, like NASDAQ, DJI, S&P
+
+===============
+
+pickle all machine learning result
+
+daily job, do last predict and save result
+
+when load quote, create the percentage change, also update the predict table for accuracy check
+update 3 days average and 7 days average
+
+python unit test
+python test coverage
+
+collect crude oil, gold, bond... history price
+
+get canada toronto stock symbols and collect quotes
+
+collect etf 

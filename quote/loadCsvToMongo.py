@@ -1,5 +1,5 @@
 from base.stockMongo import insertQuotes
-from quote.stockQuote import convertToJson 
+from quote.stockQuote import toDict 
 import pandas as pd
 import os
 import shutil
@@ -19,7 +19,7 @@ def loadCsv(csvFile):
         quotes = pd.DataFrame.from_csv("d:/quotes/{}".format(csvFile))
         if isDataFrameValid(quotes):
             print(quotes['Symbol'][0])
-            quotesJson = convertToJson(quotes)
+            quotesJson = toDict(quotes)
             insertQuotes(quotesJson)
             print(len(quotes), ' quotes were inserted...')
             moveFile(csvFile, "d:/quotes/success/")
@@ -29,10 +29,13 @@ def loadCsv(csvFile):
         moveFile(csvFile, "d:/quotes/error/")
         
 def isFile(csvFile):
-    return os.path.isfile("d:/quotes/{}".format(csvFile))        
+    return os.path.isfile("d:/quotes/{}".format(csvFile))   
 
-if __name__ == '__main__':
-    csvFiles = list(filter(isFile, os.listdir("d:/quotes")))    
-    multiprocessing.freeze_support()        
+def loadAllQuoteFiles():
+    csvFiles = list(filter(isFile, os.listdir("d:/quotes"))) 
     with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
         p.map(loadCsv, csvFiles)
+
+if __name__ == '__main__':
+    multiprocessing.freeze_support()        
+    loadAllQuoteFiles()
