@@ -39,6 +39,16 @@ def findQuotesAfterDate(symbol, lastLearningDate):
 def findLatestTwoDaysQuote(symbol): 
     return  stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(2)
 
+def findPredictionByDate(date, prediction):
+    return stockDb.prediction.find({"date":date, "prediction": prediction})
+
+def findLearnAccuracy():
+    return stockDb.learnAccuracy.find({}) 
+
+def findLatestPredictionDate():
+    result = stockDb.prediction.find({}).sort("date", -1).limit(1)
+    return result.next()['date']
+
 def saveLearnAccuracy(symbol, mode, confidence, trainNumber):             
     return stockDb.learnAccuracy.insert({"Symbol":symbol, "Mode":mode, "Confidence":confidence, "trainNumber":trainNumber})  
 

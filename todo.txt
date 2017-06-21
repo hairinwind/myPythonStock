@@ -11,6 +11,7 @@ update 3 days average and 7 days average
 
 python unit test
 python test coverage
+python key arguments
 
 collect crude oil, gold, bond... history price
 

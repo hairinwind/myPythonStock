@@ -154,7 +154,7 @@ if __name__ == '__main__':
     data1 = fileUtil.loadPickle(getPickleName('KO'))
     print(data1['lastRecordDate'])
     '''
-    # print('confidence', getClassifierAccuracy('KO'))
+    print('confidence', getClassifierAccuracy('ABEO'))
     
     # print("last prediction", predict('KO'))
     

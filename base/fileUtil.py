@@ -4,6 +4,7 @@ import pickle
 QUOTES_DIR = "d:/quotes/"
 QUOTES_ERROR_DIR = QUOTES_DIR + "error/"
 QUOTES_SUCCESS_DIR = QUOTES_DIR + "success/"
+PREDICTION_REPORT_DIR = QUOTES_DIR + "report/"
 
 MACHINE_LEARNING_PICKLE = "D:/quotes/pickle/"
 
