@@ -35,20 +35,19 @@ if __name__ == '__main__':
     
     symbols = getAllSymbols()
     
-    '''multiprocessing.freeze_support()
+    multiprocessing.freeze_support()
     with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(fetchAndStore, symbols)'''
+        p.map(fetchAndStore, symbols)
         
-    '''loadAllQuoteFiles()
+    loadAllQuoteFiles()
         
     print('starting weave in next Tx day data')
     with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(saveNextTxDayData, symbols)'''
+        p.map(saveNextTxDayData, symbols)
+    # update prediction result    
         
     print('starting prediction for next Tx day')
     with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
         p.map(predictAndSave, symbols)
-        
-    # update prediction result    
-        
+                
     print(datetime.datetime.now().strftime("%Y-%m-%d"), "daily job is done...")
