@@ -4,7 +4,7 @@ import multiprocessing
 import base.fileUtil as fileUtil
 from base.stockMongo import getAllSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate
 import base.stockMongo as stockMongo
-from machinelearning.machineLearningMode1 import predict
+from machinelearning.machineLearningMode1 import predict, determineResult
 import pandas as pd
 from quote.loadCsvToMongo import loadAllQuoteFiles
 from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
@@ -12,8 +12,12 @@ from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
 
 def saveNextTxDayData(symbol):
     quotes = findLatestTwoDaysQuote(symbol['Symbol'])
-    getAndSaveNextTxDayData(quotes)
-    # update the predict 
+    df = getAndSaveNextTxDayData(quotes)
+    if len(df) > 1 :
+        date = df['Date'].values[0]
+        nextClosePercentage = df['nextClosePercentage'].values[0]
+        result = determineResult(nextClosePercentage)
+        stockMongo.updatePredictionIsCorrect(symbol['Symbol'], date, result)
     
 def predictAndSave(symbol):
     try:
@@ -60,23 +64,22 @@ if __name__ == '__main__':
     start = datetime.datetime.now().strftime("%Y-%m-%d")
     end = datetime.datetime.now().strftime("%Y-%m-%d")
     
-    '''fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
-    
     symbols = getAllSymbols()
+    fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
     
     multiprocessing.freeze_support()
     with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
         p.map(fetchAndStore, symbols)
         
     loadAllQuoteFiles()
-        
+
     print('starting weave in next Tx day data')
     with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(saveNextTxDayData, symbols)    
-        
+        p.map(saveNextTxDayData, symbols)
+    
     print('starting prediction for next Tx day')
     with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(predictAndSave, symbols)'''
+        p.map(predictAndSave, symbols)
         
     predictReport()
                 

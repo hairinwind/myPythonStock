@@ -1,12 +1,16 @@
 from base.stockMongo import insertQuotes
+from base import fileUtil
 from quote.stockQuote import toDict 
 import pandas as pd
 import os
 import shutil
 import multiprocessing
 
-def moveFile(file, targetDir):
-    shutil.move("d:/quotes/{}".format(file), targetDir)
+def getQuotesCsvFileFullPath(csvFile):
+    return fileUtil.QUOTES_DIR + csvFile
+
+def moveQuotesCsvFile(file, targetDir):
+    shutil.move(getQuotesCsvFileFullPath(file), targetDir)
     
 def isDataFrameValid(df): 
     columns = list(df)
@@ -16,23 +20,26 @@ def isDataFrameValid(df):
 
 def loadCsv(csvFile):
     try: 
-        quotes = pd.DataFrame.from_csv("d:/quotes/{}".format(csvFile))
+        quotes = pd.read_csv(getQuotesCsvFileFullPath(csvFile), dtype={'Symbol': 'str'})
         if isDataFrameValid(quotes):
             print(quotes['Symbol'][0])
+            quotes.reset_index(inplace=True)
+            quotes.drop_duplicates(subset=['Date'], keep='last', inplace=True)
             quotesJson = toDict(quotes)
             insertQuotes(quotesJson)
             print(len(quotes), ' quotes were inserted...')
-            moveFile(csvFile, "d:/quotes/success/")
+            moveQuotesCsvFile(csvFile, fileUtil.QUOTES_SUCCESS_DIR)
         else:
-            moveFile(csvFile, "d:/quotes/error/")
+            moveQuotesCsvFile(csvFile, fileUtil.QUOTES_ERROR_DIR)
     except:
-        moveFile(csvFile, "d:/quotes/error/")
+        moveQuotesCsvFile(csvFile, fileUtil.QUOTES_ERROR_DIR)
         
 def isFile(csvFile):
-    return os.path.isfile("d:/quotes/{}".format(csvFile))   
+    return os.path.isfile(getQuotesCsvFileFullPath(csvFile))   
 
 def loadAllQuoteFiles():
-    csvFiles = list(filter(isFile, os.listdir("d:/quotes"))) 
+    csvFiles = list(filter(isFile, os.listdir(fileUtil.QUOTES_DIR))) 
+    # csvFiles = ['INF_2017-06-21_2017-06-21.csv']
     with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
         p.map(loadCsv, csvFiles)
 

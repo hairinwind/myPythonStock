@@ -1,4 +1,5 @@
 import pymongo
+from bson.objectid import ObjectId
 
 client = pymongo.MongoClient()
 stockDb = client.stock
@@ -33,8 +34,11 @@ def findAllQuotesBySymbol(symbol):
 def findLatestQuotes(symbol, number):
     return stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(number)
                               
-def findQuotesAfterDate(symbol, lastLearningDate):
-    return stockDb.quote.find({"Symbol":symbol, "Date":{"$gt":lastLearningDate}})    
+def findQuotesAfterDate(symbol, date):
+    return stockDb.quote.find({"Symbol":symbol, "Date":{"$gt":date}})  
+
+def findQuotesBySymbolDate(symbol, date):
+    return stockDb.quote.find({"Symbol":symbol, "Date":date})  
 
 def findLatestTwoDaysQuote(symbol): 
     return  stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(2)
@@ -49,8 +53,27 @@ def findLatestPredictionDate():
     result = stockDb.prediction.find({}).sort("date", -1).limit(1)
     return result.next()['date']
 
+def findDuplicatedQuotes():
+    pipeline = [
+                    {"$match": {"$and":[{"Date":{"$gte":"2017-03-08"}},{"Date":{"$lte":"2017-03-08"}}]} },
+                    {"$group" : {"_id" : {"Symbol" : "$Symbol","Date" : "$Date"}, "count": {"$sum" : 1} } },
+                    {"$match" : {"_id" : { "$ne" : "null" } , "count" : {"$gt": 1} }}
+                ]
+    return stockDb.quote.aggregate(pipeline=pipeline)
+
 def saveLearnAccuracy(symbol, mode, confidence, trainNumber):             
     return stockDb.learnAccuracy.insert({"Symbol":symbol, "Mode":mode, "Confidence":confidence, "trainNumber":trainNumber})  
 
 def savePrediction(predict):
     return stockDb.prediction.insert(predict)
+
+def updatePredictionIsCorrect(symbol, date, result):
+    prediction = stockDb.prediction.find_one({'Symbol':symbol, "date":date})
+    if prediction is None:
+        print("No prediction for {} on date {}".format(symbol, date))
+        return
+    isCorrect = prediction['prediction'] == result
+    return stockDb.prediction.update_one({'Symbol':symbol, "date":date}, {"$set": {"isCorrect":isCorrect}}, upsert=False)
+
+def deleteById(_id):
+    return stockDb.quote.delete_one({'_id': ObjectId(_id)})

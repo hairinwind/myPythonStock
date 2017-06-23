@@ -72,6 +72,7 @@ def getAndSaveNextTxDayData(quotes):
         for value in values:
             if pd.notnull(value[1]) and pd.notnull(value[2]):
                 stockMongo.updateQuoteNextClose(value[0], value[1], value[2])
+    return df
 
 def initialNextTxDayData(symbol):
     quotes = stockMongo.findAllQuotesBySymbol(symbol['Symbol'])
@@ -90,7 +91,7 @@ def initialAllNextTxDayData():
 
 if __name__ == '__main__':        
     start = '1960-01-01'
-    end = '2017-06-19'
+    end = '2017-06-21'
        
     '''
     symbols = getAllSymbols()
@@ -100,6 +101,6 @@ if __name__ == '__main__':
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    # fetchAndStoreQuotes(findSymbol('^NYA'), start, end)        
+    fetchAndStoreQuotes(findSymbol('INF'), start, end)        
     
-    initialAllNextTxDayData()
+    #initialAllNextTxDayData()
