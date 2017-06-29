@@ -59,11 +59,12 @@ def extract_featureset(df):
     y = df['result'].values
     return X, y, df
 
-def extract_featureForPredict(df):
+def extract_featureForPredict(df, latestPredictionDate):
     df = addValue(df)
-    df = df[-1:]
-    X = df[trainingDataColumns].values
-    return X, df
+    unPredicted_df = df.loc[(df["Date"] > latestPredictionDate)]
+    unPredicted_df.reset_index(drop=True, inplace=True)
+    X = unPredicted_df[trainingDataColumns].values
+    return X, unPredicted_df
 
 def getClassifier():
     return VotingClassifier([
@@ -134,17 +135,27 @@ def continueMachineLearning(symbol):
 def predict(symbol):    
     ml_data = fileUtil.loadPickle(getPickleName(symbol))
     
-    quotes = stockMongo.findLatestQuotes(symbol, 7)
+    quotes = stockMongo.findLatestQuotes(symbol, 30)
     df = pd.DataFrame(list(quotes)[::-1])
-    X, df = extract_featureForPredict(df)
     
-    if X is None:
-        return None, None
-    
-    date = getLastRowDate(df)
+    latestPrediction = stockMongo.findLatestPrediction(symbol)
+    if latestPrediction is None: 
+        latestPredictionDate = df['Date'].values[-1]
+    else:
+        latestPredictionDate = latestPrediction.next()['date'] 
+    X, df = extract_featureForPredict(df, latestPredictionDate)
+
+    if X is None or df is None or len(df) == 0:
+        return None
+
+    date = getFirstRowDate(df)
     if(ml_data['lastRecordDate'] <= date): 
         prediction = ml_data['clf'].predict(X)
-        return prediction, date
+        print(symbol)
+        print('X', X)
+        print('df', df)
+        print(prediction)
+        return list(zip(prediction, df['Date'].values))
     else:
         raise ValueError('try to predict data already learned...')
 

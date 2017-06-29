@@ -49,6 +49,9 @@ def findPredictionByDate(date, prediction):
 def findLearnAccuracy():
     return stockDb.learnAccuracy.find({}) 
 
+def findLatestPrediction(symbol):
+    return stockDb.prediction.find({"Symbol":symbol}).sort("date", -1).limit(1)
+    
 def findLatestPredictionDate():
     result = stockDb.prediction.find({}).sort("date", -1).limit(1)
     return result.next()['date']

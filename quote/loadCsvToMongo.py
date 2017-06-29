@@ -1,5 +1,6 @@
 from base.stockMongo import insertQuotes
 from base import fileUtil
+from base.parallel import runToAllDone
 from quote.stockQuote import toDict 
 import pandas as pd
 import os
@@ -40,8 +41,8 @@ def isFile(csvFile):
 def loadAllQuoteFiles():
     csvFiles = list(filter(isFile, os.listdir(fileUtil.QUOTES_DIR))) 
     # csvFiles = ['INF_2017-06-21_2017-06-21.csv']
-    with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
-        p.map(loadCsv, csvFiles)
+    #with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
+    runToAllDone(loadCsv, [(csvFile,) for csvFile in csvFiles])
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()        

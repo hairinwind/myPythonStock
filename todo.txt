@@ -1,7 +1,5 @@
 collect history for index, like NASDAQ, DJI, S&P
 
-===============
-
 pickle all machine learning result
 
 daily job, do last predict and save result
@@ -9,9 +7,15 @@ daily job, do last predict and save result
 when load quote, create the percentage change, also update the predict table for accuracy check
 update 3 days average and 7 days average
 
+===============
+
 python unit test
 python test coverage
 python key arguments
+
+mongodb check current quote average volume and daily change, kick out the stock which is not active.
+
+mongodb fieldname consistent on camel case
 
 collect crude oil, gold, bond... history price
 

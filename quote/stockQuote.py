@@ -1,7 +1,4 @@
 import multiprocessing
-
-import quandl
-
 from base import fileUtil
 from base import stockMongo
 from base.stockMongo import getAllSymbols, findSymbol
@@ -11,30 +8,7 @@ import numpy as np
 from quote import stockData
 from quote.getYahooQuotes import getQuotesFromYahoo 
 
-
-quandl.ApiConfig.api_key = "ptncathabbVjauEnNMaf"
-# import pandas_datareader.data as web
-
-
-def isQuandl(symbol):
-    return 'quoteSource' in symbol and symbol['quoteSource'].split("/")[0] == 'quandl'
-
-def getQuotesFromQuandl(symbolDocument, start, end):
-    quoteSource = symbolDocument['quoteSource']
-    symbol = symbolDocument['Symbol']
-    datasetCode = quoteSource.split("/")[1]
-    if (start is not None and end is not None):
-        df = quandl.get(datasetCode + "/" + symbol, start_date=start, end_date=end)
-    else:
-        df = quandl.get(datasetCode + "/" + symbol)
-    df['Symbol'] = symbol
-    df=df.rename(columns = {'Adj. Volume':'Adj Volume', 'Adj. Low':'Adj Low', 'Adj. Open':'Adj Open', 'Adj. Close':'Adj Close', 'Adj. High':'Adj High' })
-    return df
-
 def getQuotes(symbol, start, end):
-    '''if(isQuandl(symbol)):
-        df = getQuotesFromQuandl(symbol, start, end)
-    else:'''
     df = getQuotesFromYahoo(symbol['Symbol'], start, end)
     return df
     
@@ -45,24 +19,29 @@ def toDict(df):
             records['Date'] = records['Date'].dt.strftime('%Y-%m-%d')
         return records.to_dict(orient='records')
 
-def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
+
+def retryFetchQuotes(symbol, start, end):
     retryCount = 0
-    quotes = None
-    while (retryCount < 5):
+    while retryCount < 5:
         try:
-            quotes = getQuotes(symbol, start, end)
-            break
-        except Exception as e: 
+            return getQuotes(symbol, start, end)
+        except Exception as e:
             print(type(e))
             print(str(e))
             print('... error to get quotes for ', symbol['Symbol'])
             retryCount += 1
+    return None
 
-    # quotesJson = convertToJson(quotes)
+
+def storeQuoteToCsv(symbol, start, end, quotes):
     if (quotes is None):
         print(symbol['Symbol'], 'does not have any quote in the period...')
     else:
         fileUtil.saveQuotesToCsv(symbol['Symbol'], quotes, start, end)
+
+def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
+    quotes = retryFetchQuotes(symbol, start, end)
+    storeQuoteToCsv(symbol, start, end, quotes)
 
 def getAndSaveNextTxDayData(quotes):
     df = pd.DataFrame(list(quotes))

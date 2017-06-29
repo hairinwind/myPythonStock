@@ -1,14 +1,14 @@
 import datetime
 import functools
-import multiprocessing
 import base.fileUtil as fileUtil
+from base.parallel import runToAllDone
 from base.stockMongo import getAllSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate
 import base.stockMongo as stockMongo
 from machinelearning.machineLearningMode1 import predict, determineResult
 import pandas as pd
 from quote.loadCsvToMongo import loadAllQuoteFiles
 from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
-
+from multiprocessing import freeze_support
 
 def saveNextTxDayData(symbol):
     quotes = findLatestTwoDaysQuote(symbol['Symbol'])
@@ -22,15 +22,18 @@ def saveNextTxDayData(symbol):
 def predictAndSave(symbol):
     try:
         print(symbol['Symbol'])
-        prediction, date = predict(symbol['Symbol'])
+        predictions = predict(symbol['Symbol'])
         
-        if prediction is None:
+        if predictions is None:
             return
         
-        print(prediction[0])
-        print(date)
-        predictObj = {"Symbol":symbol['Symbol'], "date":date, "prediction":int(prediction[0])}
-        savePrediction(predictObj)
+        for prediction in predictions:
+            print(prediction[0])
+            print(prediction[1])
+            predictionResult = prediction[0]
+            predictionDate = prediction[1]
+            predictObj = {"Symbol":symbol['Symbol'], "date":predictionDate, "prediction":int(predictionResult)}
+            savePrediction(predictObj)
     except FileNotFoundError:
         print("machine learning pickle file not found...")
         
@@ -57,30 +60,37 @@ def predictReport():
     date = findLatestPredictionDate()
     getAndSavePredictReport(date, 1)
     getAndSavePredictReport(date, -1)
-
+    
+def fetchAndStore(symbol):
+    start = datetime.datetime.now().strftime("%Y-%m-%d")
+    end = datetime.datetime.now().strftime("%Y-%m-%d")
+    fetchAndStoreQuotes(symbol, start, end)
+    
+def now():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
 if __name__ == '__main__':      
-    print(datetime.datetime.now().strftime("%Y-%m-%d"), "daily job is started...")
+    freeze_support()
+    print(now(), "daily job is started...")
       
     start = datetime.datetime.now().strftime("%Y-%m-%d")
     end = datetime.datetime.now().strftime("%Y-%m-%d")
     
+    #check if previous predict exists, if not, do it
+    
     symbols = getAllSymbols()
-    fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
+    # fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
+    # fetchAndStore = lambda symbol: fetchAndStoreQuotes(symbol, start, end)
     
-    multiprocessing.freeze_support()
-    with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(fetchAndStore, symbols)
-        
+    runToAllDone(fetchAndStore, [(symbol, ) for symbol in symbols], NUMBER_OF_PROCESSES = 12)
+    print(now(), "quote csv files were all downloaded...")
     loadAllQuoteFiles()
-
-    print('starting weave in next Tx day data')
-    with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(saveNextTxDayData, symbols)
-    
-    print('starting prediction for next Tx day')
-    with multiprocessing.Pool(multiprocessing.cpu_count() -1) as p:  
-        p.map(predictAndSave, symbols)
+    print(now(), 'starting weave in next Tx day data')
+    runToAllDone(saveNextTxDayData, [(symbol, ) for symbol in symbols])
+    print(now(), 'starting prediction for next Tx day')
+    runToAllDone(predictAndSave, [(symbol, ) for symbol in symbols]) # , NUMBER_OF_PROCESSES=1 
         
-    predictReport()
-                
-    print(datetime.datetime.now().strftime("%Y-%m-%d"), "daily job is done...")
+    print(now(), 'generating predict report')
+    predictReport() 
+        
+    print(now(), "daily job is done...")
