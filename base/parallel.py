@@ -35,8 +35,7 @@ def worker(input, output):
 
 def calculate(func, args):
     result = func(*args)
-    return '%s says that %s%s = %s' % \
-        (current_process().name, func.__name__, args, result)
+    return '%s says that %s = %s' % (current_process().name, args, result)
 
 #
 # Functions for testing

@@ -1,13 +1,15 @@
 import pymongo
 from bson.objectid import ObjectId
 
+SYMBOL_INACTIVE = "inactive"
+
 client = pymongo.MongoClient()
 stockDb = client.stock
 
 # columns = {"_id":1, "Date":1, "Open":1, "High":1, "Low":1, "Close":1, "Adj Close":1, "Volume":1}
 
-def getAllSymbols():
-    return stockDb.symbol.find()
+def getAllActiveSymbols():
+    return stockDb.symbol.find({ "Status": { "$ne": SYMBOL_INACTIVE } })
 
 def insertQuotes(quotes): 
     stockDb.quote.insert_many(quotes)
@@ -15,11 +17,16 @@ def insertQuotes(quotes):
 def insertSymbols(symbols):
     stockDb.symbol.insert_many(symbols)
     
+def updateSymbolStatus(symbol, status):
+    symbol = findSymbol(symbol)
+    if (symbol is not None):
+        symbol['Status'] = status
+        stockDb.symbol.save(symbol)
+    
 def updateSymbolQuoteSource(symbol, quoteSource):
     symbol = findSymbol(symbol)
     if (symbol is not None):
         symbol['quoteSource'] = quoteSource
-        print(symbol)
         stockDb.symbol.save(symbol)
 
 def updateQuoteNextClose(docId, nextClose, nextClosePercentage):
@@ -43,18 +50,18 @@ def findQuotesBySymbolDate(symbol, date):
 def findLatestTwoDaysQuote(symbol): 
     return  stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(2)
 
-def findPredictionByDate(date, prediction):
-    return stockDb.prediction.find({"date":date, "prediction": prediction})
+def findPredictionByDate(mode, date, prediction):
+    return stockDb.prediction.find({"Date":date, "Prediction": prediction, "Mode":mode})
 
-def findLearnAccuracy():
-    return stockDb.learnAccuracy.find({}) 
+def findLearnAccuracy(mode):
+    return stockDb.learnAccuracy.find({"Mode":mode}) 
 
-def findLatestPrediction(symbol):
-    return stockDb.prediction.find({"Symbol":symbol}).sort("date", -1).limit(1)
+def findLatestPrediction(symbol, mode):
+    return stockDb.prediction.find({"Symbol":symbol, "Mode":mode}).sort("Date", -1).limit(1)
     
-def findLatestPredictionDate():
-    result = stockDb.prediction.find({}).sort("date", -1).limit(1)
-    return result.next()['date']
+def findLatestPredictionDate(mode):
+    result = stockDb.prediction.find({"Mode":mode}).sort("Date", -1).limit(1)
+    return list(result)[0]['Date']
 
 def findDuplicatedQuotes():
     pipeline = [
@@ -71,12 +78,12 @@ def savePrediction(predict):
     return stockDb.prediction.insert(predict)
 
 def updatePredictionIsCorrect(symbol, date, result):
-    prediction = stockDb.prediction.find_one({'Symbol':symbol, "date":date})
+    prediction = stockDb.prediction.find_one({'Symbol':symbol, "Date":date})
     if prediction is None:
         print("No prediction for {} on date {}".format(symbol, date))
         return
     isCorrect = prediction['prediction'] == result
-    return stockDb.prediction.update_one({'Symbol':symbol, "date":date}, {"$set": {"isCorrect":isCorrect}}, upsert=False)
+    return stockDb.prediction.update_one({'Symbol':symbol, "Date":date}, {"$set": {"isCorrect":isCorrect}}, upsert=False)
 
 def deleteById(_id):
     return stockDb.quote.delete_one({'_id': ObjectId(_id)})
