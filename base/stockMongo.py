@@ -1,4 +1,5 @@
 import pymongo
+import pandas as pd
 from bson.objectid import ObjectId
 
 SYMBOL_INACTIVE = "inactive"
@@ -7,6 +8,11 @@ client = pymongo.MongoClient()
 stockDb = client.stock
 
 # columns = {"_id":1, "Date":1, "Open":1, "High":1, "Low":1, "Close":1, "Adj Close":1, "Volume":1}
+
+def getFirst(result, property):
+    resultList = list(result)
+    if len(resultList) > 0 :
+        return int(resultList[0][property])
 
 def getAllActiveSymbols():
     return stockDb.symbol.find({ "Status": { "$ne": SYMBOL_INACTIVE } })
@@ -40,6 +46,15 @@ def findAllQuotesBySymbol(symbol):
 
 def findLatestQuotes(symbol, number):
     return stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(number)
+
+def findLatestQuotesBeforeDate(symbol, date, number):
+    return stockDb.quote.find({"Symbol":symbol, "Date":{"$lte":date}}).sort("Date",-1).limit(number)
+
+def findPreviousTxDate(date):
+    result = stockDb.quote.find({"Date":{"$lt":date}}).sort("Date",-1).limit(1)
+    df = pd.DataFrame(list(result))    
+    if len(df) > 0 : 
+        return df.loc[0, 'Date']                         
                               
 def findQuotesAfterDate(symbol, date):
     return stockDb.quote.find({"Symbol":symbol, "Date":{"$gt":date}})  
@@ -71,19 +86,73 @@ def findDuplicatedQuotes():
                 ]
     return stockDb.quote.aggregate(pipeline=pipeline)
 
+def quotesCountByDate(date):
+    pipeline = [
+        {
+            "$match": {
+                "Date": date
+            }
+        },
+        {
+            "$group": {
+                "_id":"$Date",
+                "quoteCount": { "$sum": 1 }
+            }
+        }
+    ]
+    result = stockDb.quote.aggregate(pipeline=pipeline)
+    return getFirst(result, 'quoteCount') 
+
+def countPredictionByDateMode(date):
+    pipeline = [
+        {
+            "$match": {
+                "Date": date
+            }
+        },
+        {
+            "$group": {
+                "_id": "$Mode",
+                "count": { "$sum": 1 }
+            }
+        }
+    ]
+    return stockDb.prediction.aggregate(pipeline=pipeline)
+
+def countPredictionHasIsCorrect(date):
+    pipeline = [
+        {
+            "$match": {
+                "Date": date, 
+                "isCorrect": {"$exists":"true"}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$Mode",
+                "count": { "$sum": 1 }
+            }
+        }
+    ]
+    return stockDb.prediction.aggregate(pipeline=pipeline)
+
+
 def saveLearnAccuracy(symbol, mode, confidence, trainNumber):             
     return stockDb.learnAccuracy.insert({"Symbol":symbol, "Mode":mode, "Confidence":confidence, "trainNumber":trainNumber})  
 
 def savePrediction(predict):
     return stockDb.prediction.insert(predict)
 
-def updatePredictionIsCorrect(symbol, date, result):
-    prediction = stockDb.prediction.find_one({'Symbol':symbol, "Date":date})
+def updatePredictionIsCorrect(symbol, date, mode, result):
+    prediction = stockDb.prediction.find_one({'Symbol':symbol, "Date":date, "Mode":mode})
     if prediction is None:
-        print("No prediction for {} on date {}".format(symbol, date))
+        # print("No prediction for {} on date {}".format(symbol, date))
         return
-    isCorrect = prediction['prediction'] == result
-    return stockDb.prediction.update_one({'Symbol':symbol, "Date":date}, {"$set": {"isCorrect":isCorrect}}, upsert=False)
+    try:
+        isCorrect = prediction['Prediction'] == result
+        return stockDb.prediction.update_one({'Symbol':symbol, "Date":date, "Mode":mode}, {"$set": {"isCorrect":isCorrect}}, upsert=False)
+    except Exception as e:
+        print('error:', locals())
 
 def deleteById(_id):
     return stockDb.quote.delete_one({'_id': ObjectId(_id)})

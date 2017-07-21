@@ -1,10 +1,64 @@
 from base import stockMongo
+from base import parallel
+from machinelearning import machineLearning
+import functools
 import pandas as pd
 import numpy as np
+import datetime as dt
+    
+MINIMUN_QUOTE_EXPECTED = 5000
 
-# this file is to eliminate bad data
+# check if quote is loaded into db
+def isQuoteLoaded(date):
+    quoteCount = stockMongo.quotesCountByDate(date)
+    return quoteCount is not None and quoteCount > MINIMUN_QUOTE_EXPECTED
 
-if __name__ == '__main__':
+def checkAndUpdate(symbol, date=dt.datetime.now()):
+    quotes = list(stockMongo.findLatestQuotesBeforeDate(symbol['Symbol'], date, 2))
+    if len(quotes) > 1 : 
+        if "nextClose" not in quotes[1] or "nextClosePercentage" not in quotes[1] or quotes[1]["nextClose"] is None or quotes[1]["nextClosePercentage"] is None :
+            quotes[1]['nextClose'] = quotes[0]['Close']
+            quotes[1]['nextClosePercentage'] = (quotes[0]['Close'] - quotes[1]['Close']) / quotes[1]['Close']
+            stockMongo.updateQuoteNextClose(quotes[1]["_id"], quotes[1]['nextClose'],  quotes[1]['nextClosePercentage'])
+
+def isPreviousNextCloseUpdated(date):
+    symbols = stockMongo.getAllActiveSymbols(); 
+    start = dt.datetime.now()
+    
+    func = functools.partial(checkAndUpdate, date=date)
+        
+    parallel.runToAllDone(func, [(symbol, ) for symbol in symbols], NUMBER_OF_PROCESSES = 8)
+    end = dt.datetime.now()
+    print('time consumed:', (end-start).seconds)
+
+
+def isPredictionInserted(date):
+    result = stockMongo.countPredictionByDateMode(date)
+    df = pd.DataFrame(list(result))
+    checkPredictionCount = lambda machineLearningMode : machineLearning.checkPredictionCount(df, machineLearningMode)
+    list(map(checkPredictionCount, machineLearning.machineLearningModes))
+
+
+def isPreviousPredictionResultUpdated(date):
+    previousTxDate = stockMongo.findPreviousTxDate(date)
+    result = stockMongo.countPredictionHasIsCorrect(previousTxDate)
+    df = pd.DataFrame(list(result))
+    checkPreviousPrediction = lambda machineLearningMode : machineLearning.checkPredictionCount(df, machineLearningMode, text="isCorrect")
+    list(map(checkPreviousPrediction, machineLearning.machineLearningModes))
+
+
+def dailyCheck(date):
+    if isQuoteLoaded(date) == False :
+        print('quote count is less than ', MINIMUN_QUOTE_EXPECTED)
+     
+    isPreviousNextCloseUpdated(date)
+    isPredictionInserted(date)
+    isPreviousPredictionResultUpdated(date)
+    
+    print('data load is good...')
+
+# this method is to eliminate bad data
+def removeDuplicate():
     duplicates = stockMongo.findDuplicatedQuotes()
     df = pd.DataFrame(list(duplicates))
     for item in df['_id'].values:
@@ -43,4 +97,8 @@ if __name__ == '__main__':
     # both have full data, delete the first one, keep the last one
     duplicates = stockMongo.findDuplicatedQuotes()
     df = pd.DataFrame(list(duplicates))
-    print(df)    
+    print(df)
+    
+if __name__ == '__main__':
+    date = '2017-07-06'
+    dailyCheck(date)

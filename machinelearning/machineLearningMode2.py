@@ -7,6 +7,8 @@ from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 from base.parallel import runToAllDone
 import multiprocessing
 import numpy as np
+from machinelearning import machineLearingUtil
+import functools
 
 # mode2 only uses the quotes for last n years, default is 3
 # weave in the data of ^DJI, ^NYA, ^GSPC, ^IXIC 
@@ -16,15 +18,10 @@ trainingDataColumns = ['Open', 'High', 'Low', 'Close', 'Volume', '3_mean', '7_me
 MINIMUN_MACHINE_LEARNING_NUMBERS = 100
 TEST_SIZE = 0.4
 QUOTES_NUMBER = 600 # 3 years approximately  600 quotes
+THRESHOLD1=0.2
+THRESHOLD2=-0.2
 
-def determineResult(value):
-    threshold1 = 0.02
-    threshold2 = -0.02
-    if value > threshold1:
-        return 1
-    if value < threshold2:
-        return -1
-    return 0  
+determineResult = functools.partial(machineLearingUtil.determineResult, THRESHOLD1, THRESHOLD2)
 
 def getInitialData(symbol):
     quotes = stockMongo.findLatestQuotes(symbol, QUOTES_NUMBER)
