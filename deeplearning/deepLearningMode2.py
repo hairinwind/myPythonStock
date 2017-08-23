@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
-from machinelearning.machineLearningMode1 import getInitialData, extract_featureset
+from machinelearning.machineLearningMode1 import getQuoteData, extract_featureset
 from sklearn import cross_validation
 
 def convertResultToArray(result):
@@ -10,7 +10,7 @@ def convertResultToArray(result):
         return [0,0,1]
     return [0,1,0]
 
-X, y, df = extract_featureset(getInitialData('KO'))
+X, y, df = extract_featureset(getQuoteData('KO'))
 X=X[-2000:]
 y=y[-2000:]
 y = list(map(convertResultToArray, y))

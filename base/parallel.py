@@ -1,9 +1,11 @@
+import datetime as dt
 import time
 import random
 
 from multiprocessing import Process, Queue, current_process, freeze_support
 
 def runToAllDone(func, argIter, result_queue=None, NUMBER_OF_PROCESSES = 4):
+    start = dt.datetime.utcnow();
     task_queue = Queue()
     allProcess = []
     for arg in argIter:
@@ -19,6 +21,9 @@ def runToAllDone(func, argIter, result_queue=None, NUMBER_OF_PROCESSES = 4):
     for p in allProcess:
         p.join()   
     
+    end = dt.datetime.utcnow();
+    delta = end - start
+    print('use time:', delta.total_seconds())
 #
 # Function run by worker processes
 #

@@ -21,7 +21,7 @@ def determineResult(value):
         return -1
     return 0  
 
-def getInitialData(symbol):
+def getQuoteData(symbol):
     quotes = stockMongo.findAllQuotesBySymbol(symbol)
     df = pd.DataFrame(list(quotes))
     #df.set_index('Date', inplace=True)
@@ -79,7 +79,7 @@ def getClassifier():
             ])
 
 def getClassifierAccuracy(symbol):
-    quotes = getInitialData(symbol)
+    quotes = getQuoteData(symbol)
     if len(quotes) < MINIMUN_MACHINE_LEARNING_NUMBERS :
         return None, 0
     
@@ -108,7 +108,7 @@ def getPickleName(symbol):
 # pickle the classifier for future use
 def initialMachineLearning(symbol):
     print(symbol)
-    X, y, df = extract_featureset(getInitialData(symbol))
+    X, y, df = extract_featureset(getQuoteData(symbol))
     
     if len(df) < MINIMUN_MACHINE_LEARNING_NUMBERS or X is None or y is None:
         return
@@ -139,12 +139,14 @@ def continueMachineLearning(symbol):
 # get the latest quote from db and do the predict    
 def predict(symbol):    
     ml_data = fileUtil.loadPickle(getPickleName(symbol))
+    if ml_data is None: 
+        return
     
     quotes = stockMongo.findLatestQuotes(symbol, 30)
     df = pd.DataFrame(list(quotes)[::-1])
     
     latestPrediction = list(stockMongo.findLatestPrediction(symbol, MODE))
-    if latestPrediction is None: 
+    if latestPrediction is None or len(latestPrediction) == 0: 
         latestPredictionDate = df['Date'].values[-2]
     else:
         latestPredictionDate = latestPrediction[0]['Date'] 

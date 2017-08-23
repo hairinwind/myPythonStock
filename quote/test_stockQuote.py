@@ -56,10 +56,11 @@ def test_storeQuoteToCsv(mocked_saveQuotesToCsv):
     quotes = getSampleDataFrame();
     stockQuote.storeQuoteToCsv(symbol, start, end, quotes)
     mocked_saveQuotesToCsv.assert_called_once_with(symbol['Symbol'], quotes, start, end)
-    
+
+
+@mock.patch('quote.stockQuote.storeQuoteToCsv')    
 @mock.patch('quote.stockQuote.retryFetchQuotes')
-@mock.patch('quote.stockQuote.storeQuoteToCsv')
-def test_fetchAndStoreQuotes(mocked_retryFetchQuotes, mocked_storeQuoteToCsv):  
+def test_fetchAndStoreQuotes(mocked_retryFetchQuotes, mocked_storeQuoteToCsv):  # 
     symbol = {"Symbol":'KO'}
     start = '2017-06-01'
     end = '2017-06-10'
@@ -68,4 +69,6 @@ def test_fetchAndStoreQuotes(mocked_retryFetchQuotes, mocked_storeQuoteToCsv):
     stockQuote.fetchAndStoreQuotes(symbol, start, end)  
     mocked_retryFetchQuotes.assert_called_once_with(symbol, start, end)
     mocked_storeQuoteToCsv.assert_called_once_with(symbol, start, end, df)
+    
+    
     

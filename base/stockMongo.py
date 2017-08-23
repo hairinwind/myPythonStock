@@ -23,10 +23,16 @@ def insertQuotes(quotes):
 def insertSymbols(symbols):
     stockDb.symbol.insert_many(symbols)
     
-def updateSymbolStatus(symbol, status):
+def addSymbolStatus(symbol, status): #
+    if findSymbolContainsStatus(symbol, status):
+        return
     symbol = findSymbol(symbol)
     if (symbol is not None):
-        symbol['Status'] = status
+        if hasattr(symbol, 'Status') and len(symbol['Status'])>0:
+            symbol['Status'] += ','
+        else:
+            symbol['Status'] = ''
+        symbol['Status'] += status
         stockDb.symbol.save(symbol)
     
 def updateSymbolQuoteSource(symbol, quoteSource):
@@ -37,15 +43,38 @@ def updateSymbolQuoteSource(symbol, quoteSource):
 
 def updateQuoteNextClose(docId, nextClose, nextClosePercentage):
     stockDb.quote.update_one({'_id':docId}, {"$set": {"nextClose":nextClose,"nextClosePercentage":nextClosePercentage}}, upsert=False)
+
         
 def findSymbol(symbol):
     return stockDb.symbol.find_one({"Symbol": symbol})
 
+
+def findSymbolContainsStatus(symbol, status):
+    return stockDb.symbol.find_one({"Symbol": symbol, "Status" : {"$regex" : ".*"+status+".*"}})
+    
+
 def findAllQuotesBySymbol(symbol):
     return stockDb.quote.find({"Symbol":symbol, "Close":{"$ne" : "null"}})
 
+
 def findLatestQuotes(symbol, number):
     return stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(number)
+
+
+def getPeriodCriteria(startDate, endDate):
+    if startDate is None:
+        startDate = '1900-01-01'
+    if endDate is None:
+        endDate = '2099-12-31'
+    periodCriteria = [{"Date":{"$lt":endDate}}, {"Date":{"$gte":startDate}}]
+    return periodCriteria
+
+
+def findLatestQuotesPeriod(symbol, number, startDate, endDate):
+    periodCriteria = getPeriodCriteria(startDate, endDate)
+    criteria = {"Symbol":symbol, "$and": periodCriteria}
+    return stockDb.quote.find(criteria).sort("Date",-1).limit(number)
+
 
 def findLatestQuotesBeforeDate(symbol, date, number):
     return stockDb.quote.find({"Symbol":symbol, "Date":{"$lte":date}}).sort("Date",-1).limit(number)
@@ -55,28 +84,44 @@ def findPreviousTxDate(date):
     df = pd.DataFrame(list(result))    
     if len(df) > 0 : 
         return df.loc[0, 'Date']                         
+
                               
 def findQuotesAfterDate(symbol, date):
     return stockDb.quote.find({"Symbol":symbol, "Date":{"$gt":date}})  
 
-def findQuotesBySymbolDate(symbol, date):
-    return stockDb.quote.find({"Symbol":symbol, "Date":date})  
 
+def findQuotesBySymbolDate(symbol, date):
+    return stockDb.quote.find({"Symbol":symbol, "Date":date})
+
+
+def findQuotesBySymbolPeriod(symbol, startDate, endDate, dateSort=-1):
+    return stockDb.quote.find({"Symbol":symbol, "$and": [ { "Date": { "$lte": endDate } }, { "Date": { "$gte": startDate } } ]}).sort("Date", dateSort)
+
+
+def findQuotesByPeriod(startDate, endDate, dateSort=-1):
+    return stockDb.quote.find({"$and": [ { "Date": { "$lte": endDate } }, { "Date": { "$gte": startDate } } ]}).sort("Date", dateSort)
+
+  
 def findLatestTwoDaysQuote(symbol): 
     return  stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(2)
+
 
 def findPredictionByDate(mode, date, prediction):
     return stockDb.prediction.find({"Date":date, "Prediction": prediction, "Mode":mode})
 
+
 def findLearnAccuracy(mode):
     return stockDb.learnAccuracy.find({"Mode":mode}) 
 
+
 def findLatestPrediction(symbol, mode):
     return stockDb.prediction.find({"Symbol":symbol, "Mode":mode}).sort("Date", -1).limit(1)
+
     
 def findLatestPredictionDate(mode):
     result = stockDb.prediction.find({"Mode":mode}).sort("Date", -1).limit(1)
     return list(result)[0]['Date']
+
 
 def findDuplicatedQuotes():
     pipeline = [
@@ -140,8 +185,10 @@ def countPredictionHasIsCorrect(date):
 def saveLearnAccuracy(symbol, mode, confidence, trainNumber):             
     return stockDb.learnAccuracy.insert({"Symbol":symbol, "Mode":mode, "Confidence":confidence, "trainNumber":trainNumber})  
 
+
 def savePrediction(predict):
     return stockDb.prediction.insert(predict)
+
 
 def updatePredictionIsCorrect(symbol, date, mode, result):
     prediction = stockDb.prediction.find_one({'Symbol':symbol, "Date":date, "Mode":mode})
@@ -154,5 +201,22 @@ def updatePredictionIsCorrect(symbol, date, mode, result):
     except Exception as e:
         print('error:', locals())
 
+
 def deleteById(_id):
     return stockDb.quote.delete_one({'_id': ObjectId(_id)})
+
+
+def findSymbolsVolumesLessThan(startDate, volume):
+    pipeline = [
+                {"$match": {"Date": {"$gt":startDate}}},
+                {"$group": {
+                            "_id": "$Symbol",
+                            "avgVolume": { "$avg": "$Volume" }
+                            }
+                },
+                {"$match": {"avgVolume": {"$lt":volume}}},
+                {"$sort":{"avgVolume":-1}}
+                ]
+    return stockDb.quote.aggregate(pipeline=pipeline);
+
+

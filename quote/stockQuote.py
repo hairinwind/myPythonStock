@@ -44,8 +44,8 @@ def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
     storeQuoteToCsv(symbol, start, end, quotes)
 
 def getAndSaveNextTxDayData(quotes):
-    df = pd.DataFrame(list(quotes))
-    df = stockData.weaveInNextTxDayData(df)
+#     df = pd.DataFrame(list(quotes))
+    df = stockData.weaveInNextTxDayData(quotes)
     if len(df) > 1:
         values = df[['_id', 'nextClose', 'nextClosePercentage']].values
         for value in values:
@@ -69,8 +69,8 @@ def initialAllNextTxDayData():
         
 
 if __name__ == '__main__':        
-    start = '2017-07-03'
-    end = '2017-07-03'
+    start = '2017-08-17'
+    end = '2017-08-17'
        
     '''
     symbols = getAllActiveSymbols()
@@ -80,6 +80,6 @@ if __name__ == '__main__':
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('PIH'), start, end)        
+    fetchAndStoreQuotes(findSymbol('^GSPC'), start, end)        
     
     #initialAllNextTxDayData()

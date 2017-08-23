@@ -27,5 +27,9 @@ def pickleIt(fileName, data):
         pickle.dump(data, f)
         
 def loadPickle(fileName):
+    if not os.path.isfile(MACHINE_LEARNING_PICKLE + fileName):
+        print("pickle file {} does not exist".format(fileName))
+        return
+    
     with (open(MACHINE_LEARNING_PICKLE + fileName, "rb")) as f:
         return pickle.load(f)

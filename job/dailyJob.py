@@ -4,39 +4,41 @@ from multiprocessing import freeze_support
 import time
 import base.fileUtil as fileUtil
 from base.parallel import runToAllDone
-from base.stockMongo import getAllActiveSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate
+from base.stockMongo import getAllActiveSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate,\
+    findQuotesBySymbolDate
 import base.stockMongo as stockMongo
 # from machinelearning.machineLearningMode1 import predict, determineResult
 # from machinelearning.machineLearningMode2 import predict as predict2
 from machinelearning import machineLearningMode1
 from machinelearning import machineLearningMode2
+from machinelearning import machineLearningRunner
 import pandas as pd
 from quote.loadCsvToMongo import loadAllQuoteFiles
 from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
 from quote import dataHealth
 
-machineLearningModes = [machineLearningMode1, machineLearningMode2]
+# machineLearningModes = [machineLearningMode1, machineLearningMode2]
+machineLearningModes = [machineLearningMode2.machineLearningMode2()]
 
 def updateMachineLearingPredictionResult(symbol, df, machineLearingMode):
     date = df['Date'].values[0]
     nextClosePercentage = df['nextClosePercentage'].values[0]
     result = machineLearingMode.determineResult(nextClosePercentage)
     mode = machineLearingMode.MODE
-    stockMongo.updatePredictionIsCorrect(symbol['Symbol'], date, mode, result)
+    stockMongo.updatePredictionIsCorrect(symbol, date, mode, result)
 
-def saveNextTxDayData(symbol):
-    quotes = findLatestTwoDaysQuote(symbol['Symbol'])
-#     for date in pd.date_range(datetime.datetime.strptime('2017-06-21', "%Y-%m-%d"), datetime.datetime.strptime('2017-07-11', "%Y-%m-%d")):
-#     quotes = stockMongo.findLatestQuotesBeforeDate(symbol['Symbol'], date.strftime("%Y-%m-%d"), 2);
+def saveNextTxDayData(quote):  # TODO need refactoring
+    quotes = stockMongo.findLatestQuotesBeforeDate(quote['Symbol'], quote['Date'], 2)
+    quotes = pd.DataFrame(list(quotes))
     df = getAndSaveNextTxDayData(quotes)
     if len(df) > 1 :
         for machineLearningMode in machineLearningModes:
-            updateMachineLearingPredictionResult(symbol, df, machineLearningMode)
+            updateMachineLearingPredictionResult(quote['Symbol'], df, machineLearningMode)
     
-def predictAndSaveForOneMode(symbol, machineLearingMode):
+def predictAndSaveForOneMode(machineLearingMode, date, symbol):
     try:
         print(symbol['Symbol'])
-        predictions = machineLearingMode.predict(symbol['Symbol'])
+        predictions = machineLearningRunner.predict(machineLearingMode, date, symbol['Symbol'])
         
         if predictions is None:
             return
@@ -51,9 +53,9 @@ def predictAndSaveForOneMode(symbol, machineLearingMode):
     except FileNotFoundError:
         print("machine learning pickle file not found...")
         
-def predictAndSave(symbol):   
+def predictAndSave(symbol, date):   
     for machineLearingMode in machineLearningModes:
-        predictAndSaveForOneMode(symbol, machineLearingMode)
+        predictAndSaveForOneMode(machineLearingMode, date, symbol)
     
 def getPredictReportFileName(mode, date, expectPrediction):
     trend = "up"
@@ -102,35 +104,38 @@ def now():
 def runDailyJob():
     print(now(), "daily job is started...")
       
-    start = datetime.datetime.now().strftime("%Y-%m-%d")
-    end = datetime.datetime.now().strftime("%Y-%m-%d")
+#     start = datetime.datetime.now().strftime("%Y-%m-%d")
+#     end = datetime.datetime.now().strftime("%Y-%m-%d")
+    start = '2017-08-17'
+    end = '2017-08-17'
     
     #check if previous predict exists, if not, do it
     
     symbols = list(getAllActiveSymbols())
     fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
     # fetchAndStore = lambda symbol: fetchAndStoreQuotes(symbol, start, end)
-    
-    runToAllDone(fetchAndStore, [(symbol, ) for symbol in symbols], NUMBER_OF_PROCESSES = 12)
-  
-    print(now(), "quote csv files were all downloaded...")
-    loadAllQuoteFiles()
-      
-    time.sleep(300)
-      
-    print(now(), "save next tx data...")
-    runToAllDone(saveNextTxDayData, [(symbol, ) for symbol in symbols])
-      
+       
+#     runToAllDone(fetchAndStore, [(symbol, ) for symbol in symbols], NUMBER_OF_PROCESSES = 12)
+#       
+#     print(now(), "quote csv files were all downloaded...")
+#     loadAllQuoteFiles()
+#           
+#     time.sleep(60)
+#         
+#     print(now(), "save next tx data...")
+#     quotes = stockMongo.findQuotesByPeriod(start, end)
+#     runToAllDone(saveNextTxDayData, [(quote, ) for quote in quotes])
+       
     print(now(), 'starting prediction for next Tx day')
-    runToAllDone(predictAndSave, [(symbol, ) for symbol in symbols]) # , NUMBER_OF_PROCESSES=1 
-            
+    runToAllDone(predictAndSave, [(symbol, start) for symbol in symbols]) # , NUMBER_OF_PROCESSES=1 
+             
     print(now(), 'generating predict report')
     predictReport() 
-#     
-    # verify
-    for date in pd.date_range(datetime.datetime.strptime(start, "%Y-%m-%d"), datetime.datetime.strptime(end, "%Y-%m-%d")):
-        print('check', date)
-        dataHealth.dailyCheck(date.strftime("%Y-%m-%d"))
+#      
+#     # verify
+#     for date in pd.date_range(datetime.datetime.strptime(start, "%Y-%m-%d"), datetime.datetime.strptime(end, "%Y-%m-%d")):
+#         print('check', date)
+#         dataHealth.dailyCheck(date.strftime("%Y-%m-%d"))
         
     print(now(), "daily job is done...")
     

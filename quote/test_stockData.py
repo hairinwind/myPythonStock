@@ -25,3 +25,5 @@ def test_weaveInNextTxDayData():
     df1=stockData.weaveInNextTxDayData(df[:1])
     assert 'nextClose' not in df1 
     assert 'nextClosePercentage' not in df1
+    
+    
