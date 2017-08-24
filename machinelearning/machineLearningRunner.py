@@ -1,10 +1,11 @@
+import functools
+
+from sklearn.model_selection import train_test_split
+
 from base import fileUtil
 from base import stockMongo
 from base.parallel import runToAllDone
-from machinelearning import machineLearningUtil
-from sklearn.model_selection import train_test_split
 import datetime as dt
-import functools
 import numpy as np
 import pandas as pd
 
@@ -29,7 +30,6 @@ def getQuoteData(machineLearningMode, startDate, endDate, symbol, history_days=0
     df = pd.DataFrame(list(quotes))
     
     if len(df) == 0:
-        stockMongo.addSymbolStatus(symbol, stockMongo.SYMBOL_INACTIVE);
         return;
 
     df = removeUnusedColumnsAndRows(df)
@@ -65,7 +65,7 @@ def initialMachineLearning(machineLearningMode, startDate, endDate, symbol):
     lastRecordDate = getLastRowDate(df)
     
     clf = machineLearningMode.getClassifier()
-    clf.fit(X, y) # use full data for training
+    clf.fit(X, y)  # use full data for training
     data = {"lastRecordDate": lastRecordDate, "clf": clf}
     fileUtil.pickleIt(getPickleName(symbol, machineLearningMode.MODE), data)
     print(symbol, ' machine learning is done...')  
@@ -85,7 +85,7 @@ def getClassifierAccuracy(machineLearningMode, startDate, endDate, symbol):
     
     clf = machineLearningMode.getClassifier()
     clf.fit(X_train, y_train)
-    confidence=clf.score(X_test, y_test)
+    confidence = clf.score(X_test, y_test)
     return confidence, len(X_train)
 
 
@@ -135,7 +135,7 @@ def verifyQuote(machineLearningMode, startDate, endDate, symbol):
     df['result'] = list(map(machineLearningMode.determineResult, df['nextClosePercentage']))
     prediction_df = pd.DataFrame(predictions, columns=['prediction', 'Date'])
     # qualified is prediction either 1 or -1
-    prediction_df = pd.merge(prediction_df, df[['Date','result']], on='Date')
+    prediction_df = pd.merge(prediction_df, df[['Date', 'result']], on='Date')
     
     # save prediction
     for index, row in prediction_df.iterrows():
@@ -159,14 +159,14 @@ def verifyQuote(machineLearningMode, startDate, endDate, symbol):
 def learn(machineLearningMode, sepDate):
 #     symbols = pd.DataFrame(list(stockMongo.getAllActiveSymbols()))['Symbol'].values
 #     symbols= ['KO', 'YGE', 'MSFT', 'FB']
-    symbols=['KO']
+    symbols = ['KO']
     learningFunction = functools.partial(initialMachineLearning, machineLearningMode, None, sepDate)
     runToAllDone(learningFunction, [(symbol,) for symbol in symbols])        
            
     saveAccuracyFunc = functools.partial(saveAccuracy, machineLearningMode, None, sepDate)
     runToAllDone(saveAccuracyFunc, [(symbol,) for symbol in symbols])
         
-    #verify the prediction of the rest data
+    # verify the prediction of the rest data
     startDate = sepDate
     endDate = None
     runToAllDone(functools.partial(verifyQuote, machineLearningMode, startDate, endDate), [(symbol,) for symbol in symbols])
