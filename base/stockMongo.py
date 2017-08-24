@@ -1,6 +1,8 @@
-import pymongo
-import pandas as pd
 from bson.objectid import ObjectId
+import pymongo
+
+import pandas as pd
+
 
 SYMBOL_INACTIVE = "inactive"
 
@@ -23,12 +25,12 @@ def insertQuotes(quotes):
 def insertSymbols(symbols):
     stockDb.symbol.insert_many(symbols)
     
-def addSymbolStatus(symbol, status): #
+def addSymbolStatus(symbol, status):  #
     if findSymbolContainsStatus(symbol, status):
         return
     symbol = findSymbol(symbol)
     if (symbol is not None):
-        if hasattr(symbol, 'Status') and len(symbol['Status'])>0:
+        if hasattr(symbol, 'Status') and len(symbol['Status']) > 0:
             symbol['Status'] += ','
         else:
             symbol['Status'] = ''
@@ -42,7 +44,7 @@ def updateSymbolQuoteSource(symbol, quoteSource):
         stockDb.symbol.save(symbol)
 
 def updateQuoteNextClose(docId, nextClose, nextClosePercentage):
-    stockDb.quote.update_one({'_id':docId}, {"$set": {"nextClose":nextClose,"nextClosePercentage":nextClosePercentage}}, upsert=False)
+    stockDb.quote.update_one({'_id':docId}, {"$set": {"nextClose":nextClose, "nextClosePercentage":nextClosePercentage}}, upsert=False)
 
         
 def findSymbol(symbol):
@@ -50,7 +52,7 @@ def findSymbol(symbol):
 
 
 def findSymbolContainsStatus(symbol, status):
-    return stockDb.symbol.find_one({"Symbol": symbol, "Status" : {"$regex" : ".*"+status+".*"}})
+    return stockDb.symbol.find_one({"Symbol": symbol, "Status" : {"$regex" : ".*" + status + ".*"}})
     
 
 def findAllQuotesBySymbol(symbol):
@@ -58,7 +60,7 @@ def findAllQuotesBySymbol(symbol):
 
 
 def findLatestQuotes(symbol, number):
-    return stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(number)
+    return stockDb.quote.find({"Symbol":symbol}).sort("Date", -1).limit(number)
 
 
 def getPeriodCriteria(startDate, endDate):
@@ -73,14 +75,14 @@ def getPeriodCriteria(startDate, endDate):
 def findLatestQuotesPeriod(symbol, number, startDate, endDate):
     periodCriteria = getPeriodCriteria(startDate, endDate)
     criteria = {"Symbol":symbol, "$and": periodCriteria}
-    return stockDb.quote.find(criteria).sort("Date",-1).limit(number)
+    return stockDb.quote.find(criteria).sort("Date", -1).limit(number)
 
 
 def findLatestQuotesBeforeDate(symbol, date, number):
-    return stockDb.quote.find({"Symbol":symbol, "Date":{"$lte":date}}).sort("Date",-1).limit(number)
+    return stockDb.quote.find({"Symbol":symbol, "Date":{"$lte":date}}).sort("Date", -1).limit(number)
 
 def findPreviousTxDate(date):
-    result = stockDb.quote.find({"Date":{"$lt":date}}).sort("Date",-1).limit(1)
+    result = stockDb.quote.find({"Date":{"$lt":date}}).sort("Date", -1).limit(1)
     df = pd.DataFrame(list(result))    
     if len(df) > 0 : 
         return df.loc[0, 'Date']                         
@@ -103,7 +105,7 @@ def findQuotesByPeriod(startDate, endDate, dateSort=-1):
 
   
 def findLatestTwoDaysQuote(symbol): 
-    return  stockDb.quote.find({"Symbol":symbol}).sort("Date",-1).limit(2)
+    return  stockDb.quote.find({"Symbol":symbol}).sort("Date", -1).limit(2)
 
 
 def findPredictionByDate(mode, date, prediction):
@@ -125,8 +127,8 @@ def findLatestPredictionDate(mode):
 
 def findDuplicatedQuotes():
     pipeline = [
-                    {"$match": {"$and":[{"Date":{"$gte":"2017-03-08"}},{"Date":{"$lte":"2017-03-08"}}]} },
-                    {"$group" : {"_id" : {"Symbol" : "$Symbol","Date" : "$Date"}, "count": {"$sum" : 1} } },
+                    {"$match": {"$and":[{"Date":{"$gte":"2017-03-08"}}, {"Date":{"$lte":"2017-03-08"}}]} },
+                    {"$group" : {"_id" : {"Symbol" : "$Symbol", "Date" : "$Date"}, "count": {"$sum" : 1} } },
                     {"$match" : {"_id" : { "$ne" : "null" } , "count" : {"$gt": 1} }}
                 ]
     return stockDb.quote.aggregate(pipeline=pipeline)
@@ -168,7 +170,7 @@ def countPredictionHasIsCorrect(date):
     pipeline = [
         {
             "$match": {
-                "Date": date, 
+                "Date": date,
                 "isCorrect": {"$exists":"true"}
             }
         },
@@ -206,6 +208,10 @@ def deleteById(_id):
     return stockDb.quote.delete_one({'_id': ObjectId(_id)})
 
 
+def deletePredictionBySymbolAndDate(mode, symbols, date):
+    return stockDb.prediction.remove({"Mode":mode, "Symbol": {"$in":symbols}, "Date":date}, {"justOne":True})  # , "isCorrect": { "$exists": False }
+
+
 def findSymbolsVolumesLessThan(startDate, volume):
     pipeline = [
                 {"$match": {"Date": {"$gt":startDate}}},
@@ -219,4 +225,17 @@ def findSymbolsVolumesLessThan(startDate, volume):
                 ]
     return stockDb.quote.aggregate(pipeline=pipeline);
 
+
+def findDuplicatedPrediction(mode):
+    pipeline = [
+        {"$match": {"Mode":mode}},
+        {
+            "$group": {
+                "_id": {"Date":"$Date", "Symbol":"$Symbol"},
+                "count": {"$sum":1}
+            }
+        },
+        {"$match": {"count": {"$gt":1}}}
+    ]
+    return stockDb.prediction.aggregate(pipeline);
 

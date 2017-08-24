@@ -1,11 +1,14 @@
-from base import stockMongo
-from base import parallel
-from machinelearning import machineLearning
 import functools
-import pandas as pd
-import numpy as np
+from multiprocessing.reduction import duplicate
+
+from base import parallel
+from base import stockMongo
 import datetime as dt
-    
+from machinelearning import machineLearning
+import numpy as np
+import pandas as pd
+
+
 MINIMUN_QUOTE_EXPECTED = 5000
 
 # check if quote is loaded into db
@@ -19,7 +22,7 @@ def checkAndUpdate(symbol, date=dt.datetime.now()):
         if "nextClose" not in quotes[1] or "nextClosePercentage" not in quotes[1] or quotes[1]["nextClose"] is None or quotes[1]["nextClosePercentage"] is None :
             quotes[1]['nextClose'] = quotes[0]['Close']
             quotes[1]['nextClosePercentage'] = (quotes[0]['Close'] - quotes[1]['Close']) / quotes[1]['Close']
-            stockMongo.updateQuoteNextClose(quotes[1]["_id"], quotes[1]['nextClose'],  quotes[1]['nextClosePercentage'])
+            stockMongo.updateQuoteNextClose(quotes[1]["_id"], quotes[1]['nextClose'], quotes[1]['nextClosePercentage'])
 
 def isPreviousNextCloseUpdated(date):
     symbols = stockMongo.getAllActiveSymbols(); 
@@ -27,9 +30,9 @@ def isPreviousNextCloseUpdated(date):
     
     func = functools.partial(checkAndUpdate, date=date)
         
-    parallel.runToAllDone(func, [(symbol, ) for symbol in symbols], NUMBER_OF_PROCESSES = 8)
+    parallel.runToAllDone(func, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=8)
     end = dt.datetime.now()
-    print('time consumed:', (end-start).seconds)
+    print('time consumed:', (end - start).seconds)
 
 
 def isPredictionInserted(date):
@@ -72,13 +75,13 @@ def removeDuplicate():
         # nextCloseNull_df = quotes_df.loc[lambda df: pd.isnull(df.nextClose)]
         for i in range(1, len(quotes_df)):
             if pd.isnull(quotes_df.loc[i, 'nextClose']) : 
-                quotes_df.loc[i, 'nextClose'] = quotes_df.loc[i-1, 'nextClose']
-                quotes_df.loc[i, 'nextClosePercentage'] = quotes_df.loc[i-1, 'nextClosePercentage']
-                stockMongo.updateQuoteNextClose(quotes_df.loc[i, '_id'], quotes_df.loc[i-1, 'nextClose'], quotes_df.loc[i-1, 'nextClosePercentage'])
+                quotes_df.loc[i, 'nextClose'] = quotes_df.loc[i - 1, 'nextClose']
+                quotes_df.loc[i, 'nextClosePercentage'] = quotes_df.loc[i - 1, 'nextClosePercentage']
+                stockMongo.updateQuoteNextClose(quotes_df.loc[i, '_id'], quotes_df.loc[i - 1, 'nextClose'], quotes_df.loc[i - 1, 'nextClosePercentage'])
         
         quotes = stockMongo.findQuotesBySymbolDate(symbol, date)
         quotes_df = pd.DataFrame(list(quotes))
-        null_df = quotes_df.loc[lambda df: pd.isnull(df.Open) | pd.isnull(df.Close) | pd.isnull(df.Volume) | df.Open == 0,:]
+        null_df = quotes_df.loc[lambda df: pd.isnull(df.Open) | pd.isnull(df.Close) | pd.isnull(df.Volume) | df.Open == 0, :]
                 
         for id in null_df['_id'].values:
             stockMongo.deleteById(id)
@@ -91,14 +94,51 @@ def removeDuplicate():
         date = item['Date']
         quotes = stockMongo.findQuotesBySymbolDate(symbol, date)
         quotes_df = pd.DataFrame(list(quotes))
-        for i in range(0, len(quotes_df)-1) :
-            stockMongo.deleteById(quotes_df.loc[i,'_id'])
+        for i in range(0, len(quotes_df) - 1) :
+            stockMongo.deleteById(quotes_df.loc[i, '_id'])
     
     # both have full data, delete the first one, keep the last one
     duplicates = stockMongo.findDuplicatedQuotes()
     df = pd.DataFrame(list(duplicates))
     print(df)
     
+    
+def updateSymbolStatusToInactive(symbol, df):
+    if len(df) == 0:
+        stockMongo.addSymbolStatus(symbol, stockMongo.SYMBOL_INACTIVE);
+        return;
+
+
+def deleteDuplicatedPrediction(mode):
+    duplicatedPredictions = list(stockMongo.findDuplicatedPrediction(mode));
+
+    dateSymbol_df = pd.DataFrame([item['_id'] for item in duplicatedPredictions])
+    '''
+              Date Symbol
+    0   2017-08-10   SFBC
+    1   2017-08-10   SVBI
+    2   2017-08-10  SENEB
+    '''
+    
+    dateSymbols = {}
+    for date, symbol_df in dateSymbol_df.groupby('Date'):
+        dateSymbols[date] = list(symbol_df['Symbol'])
+    '''
+    dateSymbols
+    {
+    '2017-06-12': ['JIVE'], 
+    '2017-06-15': ['BNCN'], 
+    '2017-06-16': ['CNCO', 'SPAN', 'GNVC'],
+    ...
+    }
+    '''
+    
+    parallel.runToAllDone(stockMongo.deletePredictionBySymbolAndDate, [(mode, symbols, date) for date, symbols in dateSymbols.items()], NUMBER_OF_PROCESSES=8)
+#     for date, symbols in dateSymbols.items() :
+#         stockMongo.deletePredictionBySymbolAndDate(mode, symbols, date)
+        
+    
 if __name__ == '__main__':
-    date = '2017-07-06'
-    dailyCheck(date)
+#     date = '2017-07-06'
+#     dailyCheck(date)
+    deleteDuplicatedPrediction("mode3")
