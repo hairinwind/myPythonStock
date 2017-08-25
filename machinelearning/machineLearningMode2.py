@@ -1,15 +1,18 @@
-from machinelearning import machineLearningUtil
-from machinelearning import machineLearningRunner
 import multiprocessing
+
+from machinelearning import machineLearningRunner
+from machinelearning import machineLearningUtil
 import pandas as pd
+
 
 class machineLearningMode2:
     MODE = 'mode2'
     MINIMUN_MACHINE_LEARNING_NUMBERS = 100
     TEST_SIZE = 0.25
-    QUOTES_NUMBER = 1200 # 1 year approximately 200 quotes
-    THRESHOLD1=0.01
-    THRESHOLD2=-0.01
+    QUOTES_NUMBER = 1200  # 1 year approximately 200 quotes
+    QUOTE_HISTORY_DAYS = 10
+    THRESHOLD1 = 0.01
+    THRESHOLD2 = -0.01
     
     
     def getClassifier(self):
@@ -32,16 +35,16 @@ class machineLearningMode2:
         if 'nextClosePercentage' not in df.columns :
             return None, None, df
           
-        df['result'] = list(map(self.determineResult, df['nextClosePercentage']))  #use nextAdjClosePercentage
+        df['result'] = list(map(self.determineResult, df['nextClosePercentage']))  # use nextAdjClosePercentage
         df = df.dropna(how='any')
         return machineLearningUtil.extract_X(df), machineLearningUtil.extract_y(df), df
     
     
-    def extract_featureForPredict(self, df):
+    def extract_featureForPredict(self, df, startDate, endDate):
         df = self.prepareMachineLearningData(df)
         # columns remove 
-        df.drop(['nextClose','nextClosePercentage'], axis=1, inplace=True, errors='ignore')
-        df = df.dropna(how='any')
+        df.drop(['nextClose', 'nextClosePercentage'], axis=1, inplace=True, errors='ignore')
+        df = df.loc[(df['Date'] >= startDate) & (df['Date'] <= endDate)]
         return machineLearningUtil.extract_X(df), '', df
 
 

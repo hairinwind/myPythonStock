@@ -24,7 +24,7 @@ def getQuoteData(machineLearningMode, startDate, endDate, symbol, history_days=0
     quotes = list(quotes)
     
     if history_days is not None and history_days > 0:
-        quotes1 = stockMongo.findLatestQuotesPeriod(symbol, history_days, None, startDate)
+        quotes1 = stockMongo.findLatestQuotesPeriod(symbol, history_days, None, startDate, includeEndDate=False)
         quotes.extend(list(quotes1))
     
     df = pd.DataFrame(list(quotes))
@@ -117,10 +117,9 @@ def quotePredict(machineLearningMode, symbol, X, dates):
 
 def predict(machineLearningMode, date, symbol):
     startDate = date
-    endDate = dt.datetime.strftime(dt.datetime.strptime(startDate, "%Y-%m-%d") + dt.timedelta(days=1), "%Y-%m-%d")
-    history_days = 10
-    quotes = getQuoteData(machineLearningMode, startDate, endDate, symbol, history_days=history_days)
-    X, y, df = machineLearningMode.extract_featureForPredict(quotes)  
+    endDate = date
+    quotes = getQuoteData(machineLearningMode, startDate, endDate, symbol, history_days=machineLearningMode.QUOTE_HISTORY_DAYS)
+    X, y, df = machineLearningMode.extract_featureForPredict(quotes, startDate, endDate)  
     return quotePredict(machineLearningMode, symbol, X, df['Date'].values)
 
 

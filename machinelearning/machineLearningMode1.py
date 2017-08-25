@@ -11,6 +11,7 @@ class machineLearningMode1:
     MINIMUN_MACHINE_LEARNING_NUMBERS = 100
     TEST_SIZE = 0.25
     QUOTES_NUMBER = 999999999999999  # 1 year approximately 200 quotes
+    QUOTE_HISTORY_DAYS = 10
     THRESHOLD1 = 0.02
     THRESHOLD2 = -0.02
     
@@ -22,6 +23,7 @@ class machineLearningMode1:
     def prepareMachineLearningData(self, quotes, history_days=0):
         df = quotes.apply(pd.to_numeric, errors='ignore')
         
+        df = df.sort_values(['Date'])
         df['3_mean'] = df['Close'].rolling(window=3).mean()
         df['7_mean'] = df['Close'].rolling(window=7).mean()
         df['3_mean_volume'] = df['Volume'].rolling(window=3).mean()
@@ -51,11 +53,11 @@ class machineLearningMode1:
         return self.extract_X(df), machineLearningUtil.extract_y(df), df
     
     
-    def extract_featureForPredict(self, df):
+    def extract_featureForPredict(self, df, startDate, endDate):
         df = self.prepareMachineLearningData(df)
         # columns remove 
         df.drop(['nextClose', 'nextClosePercentage'], axis=1, inplace=True, errors='ignore')
-        df = df.dropna(how='any')
+        df = df.loc[(df['Date'] >= startDate) & (df['Date'] <= endDate)]
         return self.extract_X(df), '', df
 
 
