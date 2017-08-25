@@ -120,9 +120,10 @@ def deleteDuplicatedPrediction(mode):
     2   2017-08-10  SENEB
     '''
     
-    dateSymbols = {}
-    for date, symbol_df in dateSymbol_df.groupby('Date'):
-        dateSymbols[date] = list(symbol_df['Symbol'])
+#     k: v for k, v in df.groupby('Region')
+    dateSymbols = {date:list(group_df['Symbol']) for date, group_df in dateSymbol_df.groupby('Date')}
+#     for date, symbol_df in dateSymbol_df.groupby('Date'):
+#         dateSymbols[date] = list(symbol_df['Symbol'])
     '''
     dateSymbols
     {
@@ -136,9 +137,15 @@ def deleteDuplicatedPrediction(mode):
     parallel.runToAllDone(stockMongo.deletePredictionBySymbolAndDate, [(mode, symbols, date) for date, symbols in dateSymbols.items()], NUMBER_OF_PROCESSES=8)
 #     for date, symbols in dateSymbols.items() :
 #         stockMongo.deletePredictionBySymbolAndDate(mode, symbols, date)
+
+
+def deleteDuplicatedQuote():
+    # check data month by month
+    pass
         
     
 if __name__ == '__main__':
 #     date = '2017-07-06'
 #     dailyCheck(date)
-    deleteDuplicatedPrediction("mode3")
+#     deleteDuplicatedPrediction("mode3")
+    deleteDuplicatedQuote()

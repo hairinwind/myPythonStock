@@ -63,17 +63,20 @@ def findLatestQuotes(symbol, number):
     return stockDb.quote.find({"Symbol":symbol}).sort("Date", -1).limit(number)
 
 
-def getPeriodCriteria(startDate, endDate):
+def getPeriodCriteria(startDate, endDate, includeEndDate):
     if startDate is None:
         startDate = '1900-01-01'
     if endDate is None:
         endDate = '2099-12-31'
-    periodCriteria = [{"Date":{"$lt":endDate}}, {"Date":{"$gte":startDate}}]
+    endDateOperator = "$lte"
+    if not includeEndDate:
+        endDateOperator = "$lt"
+    periodCriteria = [{"Date":{endDateOperator:endDate}}, {"Date":{"$gte":startDate}}]
     return periodCriteria
 
 
-def findLatestQuotesPeriod(symbol, number, startDate, endDate):
-    periodCriteria = getPeriodCriteria(startDate, endDate)
+def findLatestQuotesPeriod(symbol, number, startDate, endDate, includeEndDate=True):
+    periodCriteria = getPeriodCriteria(startDate, endDate, includeEndDate)
     criteria = {"Symbol":symbol, "$and": periodCriteria}
     return stockDb.quote.find(criteria).sort("Date", -1).limit(number)
 
