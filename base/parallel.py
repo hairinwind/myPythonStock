@@ -1,10 +1,11 @@
-import datetime as dt
-import time
-import random
-
 from multiprocessing import Process, Queue, current_process, freeze_support
+import random
+import time
 
-def runToAllDone(func, argIter, result_queue=None, NUMBER_OF_PROCESSES = 4):
+import datetime as dt
+
+
+def runToAllDone(func, argIter, result_queue=None, NUMBER_OF_PROCESSES=4):
     start = dt.datetime.utcnow();
     task_queue = Queue()
     allProcess = []
@@ -39,23 +40,27 @@ def worker(input, output):
 #
 
 def calculate(func, args):
-    result = func(*args)
-    return '%s says that %s = %s' % (current_process().name, args, result)
+    try:
+        result = func(*args)
+        return '%s says that %s = %s' % (current_process().name, args, result)
+    except Exception as e:
+            print("error happened when running multiple threads methods...")
+            print(str(e))
 
 #
 # Functions for testing
 #
 def square(a):
-    time.sleep(0.5*random.random())
+    time.sleep(0.5 * random.random())
     if a == 18:
         time.sleep(2) 
     print("{} : square {}".format(current_process().name, a))
-    return a*a
+    return a * a
 
 def test1():
     runToAllDone(square, [(i,) for i in range(20)])
     print('all done...1')
-    runToAllDone(square, [(i,) for i in range(100,105)])
+    runToAllDone(square, [(i,) for i in range(100, 105)])
     print('all done...2')
 
 if __name__ == '__main__':
