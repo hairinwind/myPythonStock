@@ -1,11 +1,13 @@
-from base.stockMongo import insertQuotes
-from base import fileUtil
-from base.parallel import runToAllDone
-from quote.stockQuote import toDict 
-import pandas as pd
+import multiprocessing
 import os
 import shutil
-import multiprocessing
+
+from base import fileUtil
+from base.parallel import runToAllDone
+from base.stockMongo import insertQuotes
+import pandas as pd
+from quote.stockQuote import toDict 
+
 
 def getQuotesCsvFileFullPath(csvFile):
     return fileUtil.QUOTES_DIR + csvFile
@@ -29,7 +31,7 @@ def loadCsv(csvFile):
             quotesJson = toDict(quotes)
             insertQuotes(quotesJson)
             print(len(quotes), ' quotes were inserted...')
-            moveQuotesCsvFile(csvFile, fileUtil.QUOTES_SUCCESS_DIR)
+            fileUtil.archiveQuoteFileToZip(fileUtil.QUOTES_SUCCESS_DIR, getQuotesCsvFileFullPath(csvFile))
         else:
             moveQuotesCsvFile(csvFile, fileUtil.QUOTES_ERROR_DIR)
     except:
@@ -41,7 +43,7 @@ def isFile(csvFile):
 def loadAllQuoteFiles():
     csvFiles = list(filter(isFile, os.listdir(fileUtil.QUOTES_DIR))) 
     # csvFiles = ['INF_2017-06-21_2017-06-21.csv']
-    #with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
+    # with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
     runToAllDone(loadCsv, [(csvFile,) for csvFile in csvFiles])
 
 if __name__ == '__main__':
