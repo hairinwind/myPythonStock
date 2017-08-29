@@ -1,8 +1,10 @@
 import functools
 from multiprocessing.reduction import duplicate
 
+from base import dateUtil
 from base import parallel
 from base import stockMongo
+from base.parallel import runToAllDone
 import datetime as dt
 from machinelearning import machineLearning
 import numpy as np
@@ -25,7 +27,7 @@ def checkAndUpdate(symbol, date=dt.datetime.now()):
             stockMongo.updateQuoteNextClose(quotes[1]["_id"], quotes[1]['nextClose'], quotes[1]['nextClosePercentage'])
 
 def isPreviousNextCloseUpdated(date):
-    symbols = stockMongo.getAllActiveSymbols(); 
+    symbols = stockMongo.findAllActiveSymbols(); 
     start = dt.datetime.now()
     
     func = functools.partial(checkAndUpdate, date=date)
@@ -139,13 +141,47 @@ def deleteDuplicatedPrediction(mode):
 #         stockMongo.deletePredictionBySymbolAndDate(mode, symbols, date)
 
 
-def deleteDuplicatedQuote():
+def deleteQuoteHasNoNextClose(quoteCount):
+    symbolDate = quoteCount['_id']
+    quotes = stockMongo.findQuotesBySymbolDate(symbolDate['Symbol'], symbolDate['Date'])
+    noNextCloseQuotes = list(filter(lambda quote: 'nextClose' not in quote, quotes))
+    toDeleteQuotes = None;
+    if len(noNextCloseQuotes) == 0 or len(quotes) == len(noNextCloseQuotes): 
+        toDeleteQuotes = quotes[1:];  # keep one document if non document has 'nextClose' 
+    else: 
+        toDeleteQuotes = noNextCloseQuotes;
+    result = stockMongo.deleteByIds([quote['_id'] for quote in toDeleteQuotes])
+    print(result)
+    
+
+
+def deleteDuplicatedQuote(startDate, endDate):
     # check data month by month
-    pass
-        
+#     symbols = stockMongo.findAllActiveSymbols()
+#     startDate = '2017-04-01'
+#     endDate = '2017-07-01'
+    print(startDate, endDate)
+    duplicatedQuotes = stockMongo.findDuplicatedQuotes(startDate, endDate)
+    runToAllDone(deleteQuoteHasNoNextClose, [(quoteCount,) for quoteCount in duplicatedQuotes]) 
+    
+
+def getDateRanges(startDate, endDate, interval):
+    result = [];
+    startDate = currentEndDate = dateUtil.toDate(startDate)
+    endDate = dateUtil.toDate(endDate)
+    while (currentEndDate < endDate):
+        startDate = currentEndDate
+        currentEndDate = dateUtil.addDays(startDate, interval)
+        result.append((startDate, currentEndDate))
+    return result
+
+def findAndDeleteDuplicatedQuote():
+    dataRanges = getDateRanges('2016-08-20', '2017-04-01', 100)    
+    runToAllDone(deleteDuplicatedQuote, dataRanges)
     
 if __name__ == '__main__':
 #     date = '2017-07-06'
 #     dailyCheck(date)
 #     deleteDuplicatedPrediction("mode3")
-    deleteDuplicatedQuote()
+    deleteDuplicatedQuote('2017-05-19', '2017-08-19')
+#     findAndDeleteDuplicatedQuote()
