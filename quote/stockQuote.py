@@ -1,7 +1,7 @@
 import multiprocessing
 from base import fileUtil
 from base import stockMongo
-from base.stockMongo import getAllActiveSymbols, findSymbol
+from base.stockMongo import findAllActiveSymbols, findSymbol
 import datetime as dt
 import pandas as pd
 import numpy as np
@@ -63,7 +63,7 @@ def initialNextTxDayData(symbol):
 
 # this is the method to weave in the next day close price      
 def initialAllNextTxDayData():
-    symbols = getAllActiveSymbols()
+    symbols = findAllActiveSymbols()
     with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
         p.map(initialNextTxDayData, symbols)
         
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     end = '2017-08-17'
        
     '''
-    symbols = getAllActiveSymbols()
+    symbols = findAllActiveSymbols()
     for symbol in symbols:
         # csvFile = Path("quotes/{}.csv".format(symbol['Symbol']))
         # if not csvFile.exists():

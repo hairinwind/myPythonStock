@@ -1,3 +1,5 @@
+from functools import wraps
+
 from bson.objectid import ObjectId
 import pymongo
 
@@ -11,12 +13,19 @@ stockDb = client.stock
 
 # columns = {"_id":1, "Date":1, "Open":1, "High":1, "Low":1, "Close":1, "Adj Close":1, "Volume":1}
 
+def wrapReturnToList(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        return list(f(*args, **kwargs))
+    return decorated
+
 def getFirst(result, property):
     resultList = list(result)
     if len(resultList) > 0 :
         return int(resultList[0][property])
 
-def getAllActiveSymbols():
+@wrapReturnToList
+def findAllActiveSymbols():
     return stockDb.symbol.find({ "Status": { "$ne": SYMBOL_INACTIVE } })
 
 def insertQuotes(quotes): 
@@ -95,6 +104,7 @@ def findQuotesAfterDate(symbol, date):
     return stockDb.quote.find({"Symbol":symbol, "Date":{"$gt":date}})  
 
 
+@wrapReturnToList
 def findQuotesBySymbolDate(symbol, date):
     return stockDb.quote.find({"Symbol":symbol, "Date":date})
 
@@ -128,11 +138,12 @@ def findLatestPredictionDate(mode):
     return list(result)[0]['Date']
 
 
-def findDuplicatedQuotes():
+@wrapReturnToList
+def findDuplicatedQuotes(startDate, endDate):
     pipeline = [
-                    {"$match": {"$and":[{"Date":{"$gte":"2017-03-08"}}, {"Date":{"$lte":"2017-03-08"}}]} },
+                    {"$match": {"$and":[{"Date":{"$gte":startDate}}, {"Date":{"$lte":endDate}}]} },
                     {"$group" : {"_id" : {"Symbol" : "$Symbol", "Date" : "$Date"}, "count": {"$sum" : 1} } },
-                    {"$match" : {"_id" : { "$ne" : "null" } , "count" : {"$gt": 1} }}
+                    {"$match" : {"count" : {"$gt": 1} }}
                 ]
     return stockDb.quote.aggregate(pipeline=pipeline)
 
@@ -211,6 +222,10 @@ def deleteById(_id):
     return stockDb.quote.delete_one({'_id': ObjectId(_id)})
 
 
+def deleteByIds(ids):
+    return stockDb.quote.remove({"_id":{"$in":ids}})
+
+
 def deletePredictionBySymbolAndDate(mode, symbols, date):
     return stockDb.prediction.remove({"Mode":mode, "Symbol": {"$in":symbols}, "Date":date}, {"justOne":True})  # , "isCorrect": { "$exists": False }
 
@@ -241,4 +256,10 @@ def findDuplicatedPrediction(mode):
         {"$match": {"count": {"$gt":1}}}
     ]
     return stockDb.prediction.aggregate(pipeline);
+
+
+def deleteOneQuote(symbol, date):
+    return stockDb.quote.delete_one({"Symbol":symbol, "Date":date})
+
+
 
