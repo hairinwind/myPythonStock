@@ -5,7 +5,7 @@ import time
 
 import base.fileUtil as fileUtil
 from base.parallel import runToAllDone
-from base.stockMongo import getAllActiveSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate, \
+from base.stockMongo import findAllActiveSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate, \
     findQuotesBySymbolDate
 import base.stockMongo as stockMongo
 from machinelearning import machineLearningRunner
@@ -28,7 +28,7 @@ def updateMachineLearingPredictionResult(symbol, df, machineLearingMode):
     mode = machineLearingMode.MODE
     stockMongo.updatePredictionIsCorrect(symbol, date, mode, result)
 
-def saveNextTxDayData(quote):  # TODO need refactoring
+def saveNextTxDayData(quote):
     quotes = stockMongo.findLatestQuotesBeforeDate(quote['Symbol'], quote['Date'], 2)
     quotes = pd.DataFrame(list(quotes))
     df = getAndSaveNextTxDayData(quotes)
@@ -110,32 +110,32 @@ def runDailyJob():
       
 #     start = datetime.datetime.now().strftime("%Y-%m-%d")
 #     end = datetime.datetime.now().strftime("%Y-%m-%d")
-    start = '2017-08-18'
-    end = '2017-08-18'
+    start = '2017-08-22'
+    end = '2017-08-22'
     
     # check if previous predict exists, if not, do it
     
-    symbols = list(getAllActiveSymbols())
+    symbols = list(findAllActiveSymbols())
     fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
     # fetchAndStore = lambda symbol: fetchAndStoreQuotes(symbol, start, end)
-       
+        
     runToAllDone(fetchAndStore, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=12)
          
     print(now(), "quote csv files were all downloaded...")
     loadAllQuoteFiles()
              
     time.sleep(60)
-           
+             
     print(now(), "save next tx data...")
     quotes = stockMongo.findQuotesByPeriod(start, end)
     runToAllDone(saveNextTxDayData, [(quote,) for quote in quotes])
-        
+          
     print(now(), 'starting prediction for next Tx day')
     runToAllDone(predictAndSave, [(symbol, start) for symbol in symbols])  # , NUMBER_OF_PROCESSES=1 
-               
+                 
     print(now(), 'generating predict report')
     predictReport() 
-      
+        
     # verify
     for date in pd.date_range(datetime.datetime.strptime(start, "%Y-%m-%d"), datetime.datetime.strptime(end, "%Y-%m-%d")):
         print('check', date)
