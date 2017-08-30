@@ -5,6 +5,7 @@ from base import parallel
 from base import stockMongo
 from base.parallel import runToAllDone
 import datetime as dt
+from machinelearning import machineLearning
 from machinelearning import machineLearningUtil
 import pandas as pd
 
@@ -42,7 +43,7 @@ def isPredictionInserted(date):
     result = stockMongo.countPredictionByDateMode(date)
     df = pd.DataFrame(list(result))
     checkPredictionCount = lambda machineLearningMode : machineLearningUtil.checkPredictionCount(df, machineLearningMode)
-    list(map(checkPredictionCount, machineLearningUtil.machineLearningModes))
+    list(map(checkPredictionCount, machineLearning.machineLearningModes))
 
 
 def isPreviousPredictionResultUpdated(date):
@@ -50,7 +51,7 @@ def isPreviousPredictionResultUpdated(date):
     result = stockMongo.countPredictionHasIsCorrect(previousTxDate)
     df = pd.DataFrame(list(result))
     checkPreviousPrediction = lambda machineLearningMode : machineLearningUtil.checkPredictionCount(df, machineLearningMode, text="isCorrect")
-    list(map(checkPreviousPrediction, machineLearningUtil.machineLearningModes))
+    list(map(checkPreviousPrediction, machineLearning.machineLearningModes))
 
 
 def dailyCheck(date):

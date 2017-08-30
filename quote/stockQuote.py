@@ -1,12 +1,12 @@
 import multiprocessing
+
 from base import fileUtil
 from base import stockMongo
 from base.stockMongo import findAllActiveSymbols, findSymbol
 import datetime as dt
 import pandas as pd
-import numpy as np
-from quote import stockData
 from quote.getYahooQuotes import getQuotesFromYahoo 
+
 
 def getQuotes(symbol, start, end):
     df = getQuotesFromYahoo(symbol['Symbol'], start, end)
@@ -42,30 +42,41 @@ def storeQuoteToCsv(symbol, start, end, quotes):
 def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
     quotes = retryFetchQuotes(symbol, start, end)
     storeQuoteToCsv(symbol, start, end, quotes)
+    
 
-def getAndSaveNextTxDayData(quotes):
-#     df = pd.DataFrame(list(quotes))
-    df = stockData.weaveInNextTxDayData(quotes)
-    if len(df) > 1:
-        values = df[['_id', 'nextClose', 'nextClosePercentage']].values
-        for value in values:
-            if pd.notnull(value[1]) and pd.notnull(value[2]):
-                stockMongo.updateQuoteNextClose(value[0], value[1], value[2])
-    return df
-
-def initialNextTxDayData(symbol):
-    quotes = stockMongo.findAllQuotesBySymbol(symbol['Symbol'])
-    try:
-        getAndSaveNextTxDayData(quotes)
-    except Exception as e:
-        print(symbol['Symbol'], 'has error......')
-        print(str(e))
-
+# def weaveInNextTxDayData(df):
+#     if len(df) < 2:
+#         return df
+#     df = df.sort_values(['Date'])
+#     df['nextClose'] = df['Close'].shift(-1)
+#     df = df.apply(pd.to_numeric, errors='ignore')
+#     df['nextClosePercentage'] = (df['nextClose'] - df['Close']) / df['Close']
+#     return df
+#     
+# 
+# def getAndSaveNextTxDayData(quotes):
+# #     df = pd.DataFrame(list(quotes))
+#     df = weaveInNextTxDayData(quotes)
+#     if len(df) > 1:
+#         values = df[['_id', 'nextClose', 'nextClosePercentage']].values
+#         for value in values:
+#             if pd.notnull(value[1]) and pd.notnull(value[2]):
+#                 stockMongo.updateQuoteNextClose(value[0], value[1], value[2])
+#     return df
+# 
+# def initialNextTxDayData(symbol):
+#     quotes = stockMongo.findAllQuotesBySymbol(symbol['Symbol'])
+#     try:
+#         getAndSaveNextTxDayData(quotes)
+#     except Exception as e:
+#         print(symbol['Symbol'], 'has error......')
+#         print(str(e))
+# 
 # this is the method to weave in the next day close price      
-def initialAllNextTxDayData():
-    symbols = findAllActiveSymbols()
-    with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
-        p.map(initialNextTxDayData, symbols)
+# def initialAllNextTxDayData():
+#     symbols = findAllActiveSymbols()
+#     with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
+#         p.map(initialNextTxDayData, symbols)
         
 
 if __name__ == '__main__':        
@@ -81,5 +92,3 @@ if __name__ == '__main__':
         fetchAndStoreQuotes(symbol, start, end)
     '''
     fetchAndStoreQuotes(findSymbol('^GSPC'), start, end)        
-    
-    #initialAllNextTxDayData()

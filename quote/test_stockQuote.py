@@ -1,12 +1,40 @@
-from quote import stockQuote
-import pandas as pd
 import datetime
 from unittest import mock
 
+import numpy as np
+import pandas as pd
+from quote import stockQuote
+
+
 def getSampleDataFrame():
     date = ['2017-06-20', '2017-06-21', '2017-06-23']
-    Close = [1,2,3]
-    return pd.DataFrame(data = {'Date':date, 'Close':Close}, index=range(3))
+    Close = [1, 2, 3]
+    return pd.DataFrame(data={'Date':date, 'Close':Close}, index=range(3))
+
+# def getSampleDataFrame1():
+#     date = ['2017-06-21', '2017-06-23', '2017-06-20']
+#     Close = [1, 2, 3]
+#     return pd.DataFrame(data={'Date':date, 'Close':Close}, index=range(3))
+#      
+# 
+# def test_weaveInNextTxDayData():
+#     df = getSampleDataFrame1()
+#     print(df)
+#     df1 = stockQuote.weaveInNextTxDayData(df)
+#     print(df1)
+#     assert 'nextClose' in df1 
+#     assert 'nextClosePercentage' in df1
+#     assert df1.loc[2, 'nextClose'] == 1
+#     assert df1.loc[0, 'nextClose'] == 2
+#     assert np.isnan(df1.loc[1, 'nextClose'])
+#     assert df1.loc[2, 'nextClosePercentage'] == (df.loc[0, 'Close'] - df.loc[2, 'Close']) * 1.0 / df.loc[2, 'Close']
+#     assert df1.loc[0, 'nextClosePercentage'] == (df.loc[1, 'Close'] - df.loc[0, 'Close']) * 1.0 / df.loc[0, 'Close']
+#     assert np.isnan(df1.loc[1, 'nextClosePercentage']) 
+#     
+#     df1 = stockQuote.weaveInNextTxDayData(df[:1])
+#     assert 'nextClose' not in df1 
+#     assert 'nextClosePercentage' not in df1
+    
 
 def strptime(str):
     return datetime.datetime.strptime(str, '%Y-%m-%d')
@@ -31,8 +59,8 @@ def test_retryFetchQuotes(mocked_getQuotes):
     stockQuote.retryFetchQuotes(symbol, start, end)
     mocked_getQuotes.assert_called_once_with(symbol, start, end)
 
-def my_side_effect():
-    raise Exception("Test")
+# def my_side_effect():
+#     raise Exception("Test")
  
 @mock.patch('quote.stockQuote.getQuotes')    
 def test_retryFetchQuotesWithErrors(mocked_getQuotes):

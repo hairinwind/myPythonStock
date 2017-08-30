@@ -2,14 +2,11 @@ from sklearn import svm, neighbors
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 
 from base import stockMongo
-from machinelearning.machineLearningMode1 import machineLearningMode1
-from machinelearning.machineLearningMode2 import machineLearningMode2
-from machinelearning.machineLearningMode3 import machineLearningMode3
 import numpy as np
 import pandas as pd
 
 
-machineLearningModes = [machineLearningMode1(), machineLearningMode2(), machineLearningMode3()]
+
 MIN_PREDICTION_COUNT = 3000
 columnsNotForLearning = ['Date', '_id', 'Symbol', 'Adj Low', 'Adj High', 'Adj Open', 'Adj Volume', 'Ex-Dividend', 'Split Ratio', 'index', 'level_0', 'result', 'nextClose', 'nextClosePercentage']
 

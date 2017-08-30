@@ -7,16 +7,17 @@ import base.fileUtil as fileUtil
 from base.parallel import runToAllDone
 from base.stockMongo import findAllActiveSymbols, savePrediction, findLatestPredictionDate
 import base.stockMongo as stockMongo
+from machinelearning import machineLearning
 from machinelearning import machineLearningRunner
-from machinelearning import machineLearningUtil
 import pandas as pd
 from quote import dataHealth
 from quote.loadCsvToMongo import loadAllQuoteFiles
 from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
 
 
+machineLearningModes = machineLearning.machineLearningModes
 # machineLearningModes = [machineLearningMode3()]
-machineLearningModes = machineLearningUtil.machineLearningModes
+
 
 def updateMachineLearingPredictionResult(symbol, df, machineLearingMode):
     date = df['Date'].values[0]
