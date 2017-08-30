@@ -5,13 +5,10 @@ import time
 
 import base.fileUtil as fileUtil
 from base.parallel import runToAllDone
-from base.stockMongo import findAllActiveSymbols, findLatestTwoDaysQuote, savePrediction, findLatestPredictionDate, \
-    findQuotesBySymbolDate
+from base.stockMongo import findAllActiveSymbols, savePrediction, findLatestPredictionDate
 import base.stockMongo as stockMongo
 from machinelearning import machineLearningRunner
-from machinelearning.machineLearningMode1 import machineLearningMode1
-from machinelearning.machineLearningMode2 import machineLearningMode2
-from machinelearning.machineLearningMode3 import machineLearningMode3
+from machinelearning import machineLearningUtil
 import pandas as pd
 from quote import dataHealth
 from quote.loadCsvToMongo import loadAllQuoteFiles
@@ -19,7 +16,7 @@ from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
 
 
 # machineLearningModes = [machineLearningMode3()]
-machineLearningModes = [machineLearningMode1(), machineLearningMode2(), machineLearningMode3()]
+machineLearningModes = machineLearningUtil.machineLearningModes
 
 def updateMachineLearingPredictionResult(symbol, df, machineLearingMode):
     date = df['Date'].values[0]
@@ -110,8 +107,8 @@ def runDailyJob():
       
 #     start = datetime.datetime.now().strftime("%Y-%m-%d")
 #     end = datetime.datetime.now().strftime("%Y-%m-%d")
-    start = '2017-08-22'
-    end = '2017-08-22'
+    start = '2017-08-25'
+    end = '2017-08-25'
     
     # check if previous predict exists, if not, do it
     

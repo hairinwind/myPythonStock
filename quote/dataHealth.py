@@ -1,13 +1,11 @@
 import functools
-from multiprocessing.reduction import duplicate
 
 from base import dateUtil
 from base import parallel
 from base import stockMongo
 from base.parallel import runToAllDone
 import datetime as dt
-from machinelearning import machineLearning
-import numpy as np
+from machinelearning import machineLearningUtil
 import pandas as pd
 
 
@@ -40,16 +38,16 @@ def isPreviousNextCloseUpdated(date):
 def isPredictionInserted(date):
     result = stockMongo.countPredictionByDateMode(date)
     df = pd.DataFrame(list(result))
-    checkPredictionCount = lambda machineLearningMode : machineLearning.checkPredictionCount(df, machineLearningMode)
-    list(map(checkPredictionCount, machineLearning.machineLearningModes))
+    checkPredictionCount = lambda machineLearningMode : machineLearningUtil.checkPredictionCount(df, machineLearningMode)
+    list(map(checkPredictionCount, machineLearningUtil.machineLearningModes))
 
 
 def isPreviousPredictionResultUpdated(date):
     previousTxDate = stockMongo.findPreviousTxDate(date)
     result = stockMongo.countPredictionHasIsCorrect(previousTxDate)
     df = pd.DataFrame(list(result))
-    checkPreviousPrediction = lambda machineLearningMode : machineLearning.checkPredictionCount(df, machineLearningMode, text="isCorrect")
-    list(map(checkPreviousPrediction, machineLearning.machineLearningModes))
+    checkPreviousPrediction = lambda machineLearningMode : machineLearningUtil.checkPredictionCount(df, machineLearningMode, text="isCorrect")
+    list(map(checkPreviousPrediction, machineLearningUtil.machineLearningModes))
 
 
 def dailyCheck(date):

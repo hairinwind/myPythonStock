@@ -1,11 +1,29 @@
-from base import stockMongo
 from sklearn import svm, neighbors
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
+
+from base import stockMongo
+from machinelearning.machineLearningMode1 import machineLearningMode1
+from machinelearning.machineLearningMode2 import machineLearningMode2
+from machinelearning.machineLearningMode3 import machineLearningMode3
 import numpy as np
 import pandas as pd
 
 
+machineLearningModes = [machineLearningMode1(), machineLearningMode2(), machineLearningMode3()]
+MIN_PREDICTION_COUNT = 3000
 columnsNotForLearning = ['Date', '_id', 'Symbol', 'Adj Low', 'Adj High', 'Adj Open', 'Adj Volume', 'Ex-Dividend', 'Split Ratio', 'index', 'level_0', 'result', 'nextClose', 'nextClosePercentage']
+
+
+def checkPredictionCount(df, machineLearningMode, text="prediction"):
+    if len(df) == 0 :
+        return 0
+    countResult = df.loc[df['_id'] == machineLearningMode.MODE]
+    if len(countResult) > 0 :   
+        if countResult['count'].values[0] <= MIN_PREDICTION_COUNT :
+            print('{} for {} is less than {}'.format(text, machineLearningMode.MODE, MIN_PREDICTION_COUNT)) 
+    else:
+        print('{} for {} not found'.format(text, machineLearningMode.MODE))
+    return countResult
 
 
 def determineResult(threshold1, threshold2, value):
@@ -42,7 +60,7 @@ def removeUnusedColumnsAndRows(df):
     df.drop(['Adj Low', 'Adj High', 'Adj Open', 'Adj Volume', 'Ex-Dividend', 'Split Ratio', 'index', 'level_0'], axis=1, inplace=True, errors='ignore')
     # replace string 'null' value with np.nan
     df = df.replace('null', np.nan)
-    #remove rows contains nan
+    # remove rows contains nan
     # df = df.dropna(how='any')
     df.dropna(how='any', subset=['Open', 'High', 'Low', 'Close', 'Volume'], inplace=True)
     return df
@@ -55,14 +73,14 @@ def addOtherQuoteData(df, symbol, days):
     df1 = pd.DataFrame(list(quotes))
     df1 = removeUnusedColumnsAndRows(df1)
     weaveInHistoryData(df1, symbol, days)
-    df1=df1.rename(columns = {'Open': symbol+'_Open'})
-    df1=df1.rename(columns = {'Close': symbol+'_Close'})
-    df1=df1.rename(columns = {'High': symbol+'_High'})
-    df1=df1.rename(columns = {'Low': symbol+'_Low'})
-    df1=df1.rename(columns = {'Volume': symbol+'_Volume'})
+    df1 = df1.rename(columns={'Open': symbol + '_Open'})
+    df1 = df1.rename(columns={'Close': symbol + '_Close'})
+    df1 = df1.rename(columns={'High': symbol + '_High'})
+    df1 = df1.rename(columns={'Low': symbol + '_Low'})
+    df1 = df1.rename(columns={'Volume': symbol + '_Volume'})
     
     cols_to_use = df1.columns.difference(df.columns)
-    cols_to_use = cols_to_use.insert(0, 'Date') # put back the join column
+    cols_to_use = cols_to_use.insert(0, 'Date')  # put back the join column
     df = pd.merge(df, df1[cols_to_use], on='Date', how='left')
     return df
 
