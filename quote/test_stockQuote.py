@@ -11,29 +11,29 @@ def getSampleDataFrame():
     Close = [1, 2, 3]
     return pd.DataFrame(data={'Date':date, 'Close':Close}, index=range(3))
 
-# def getSampleDataFrame1():
-#     date = ['2017-06-21', '2017-06-23', '2017-06-20']
-#     Close = [1, 2, 3]
-#     return pd.DataFrame(data={'Date':date, 'Close':Close}, index=range(3))
-#      
-# 
-# def test_weaveInNextTxDayData():
-#     df = getSampleDataFrame1()
-#     print(df)
-#     df1 = stockQuote.weaveInNextTxDayData(df)
-#     print(df1)
-#     assert 'nextClose' in df1 
-#     assert 'nextClosePercentage' in df1
-#     assert df1.loc[2, 'nextClose'] == 1
-#     assert df1.loc[0, 'nextClose'] == 2
-#     assert np.isnan(df1.loc[1, 'nextClose'])
-#     assert df1.loc[2, 'nextClosePercentage'] == (df.loc[0, 'Close'] - df.loc[2, 'Close']) * 1.0 / df.loc[2, 'Close']
-#     assert df1.loc[0, 'nextClosePercentage'] == (df.loc[1, 'Close'] - df.loc[0, 'Close']) * 1.0 / df.loc[0, 'Close']
-#     assert np.isnan(df1.loc[1, 'nextClosePercentage']) 
-#     
-#     df1 = stockQuote.weaveInNextTxDayData(df[:1])
-#     assert 'nextClose' not in df1 
-#     assert 'nextClosePercentage' not in df1
+def getSampleDataFrame1():
+    date = ['2017-06-21', '2017-06-23', '2017-06-20']
+    Close = [1, 2, 3]
+    return pd.DataFrame(data={'Date':date, 'Close':Close}, index=range(3))
+      
+ 
+def test_weaveInNextTxDayData():
+    df = getSampleDataFrame1()
+    print(df)
+    df1 = stockQuote.weaveInNextTxDayData(df)
+    print(df1)
+    assert 'nextClose' in df1 
+    assert 'nextClosePercentage' in df1
+    assert df1.loc[2, 'nextClose'] == 1
+    assert df1.loc[0, 'nextClose'] == 2
+    assert np.isnan(df1.loc[1, 'nextClose'])
+    assert df1.loc[2, 'nextClosePercentage'] == (df.loc[0, 'Close'] - df.loc[2, 'Close']) * 1.0 / df.loc[2, 'Close']
+    assert df1.loc[0, 'nextClosePercentage'] == (df.loc[1, 'Close'] - df.loc[0, 'Close']) * 1.0 / df.loc[0, 'Close']
+    assert np.isnan(df1.loc[1, 'nextClosePercentage']) 
+     
+    df1 = stockQuote.weaveInNextTxDayData(df[:1])
+    assert 'nextClose' not in df1 
+    assert 'nextClosePercentage' not in df1
     
 
 def strptime(str):
@@ -98,5 +98,4 @@ def test_fetchAndStoreQuotes(mocked_retryFetchQuotes, mocked_storeQuoteToCsv):  
     mocked_retryFetchQuotes.assert_called_once_with(symbol, start, end)
     mocked_storeQuoteToCsv.assert_called_once_with(symbol, start, end, df)
     
-    
-    
+

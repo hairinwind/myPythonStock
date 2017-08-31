@@ -44,26 +44,26 @@ def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
     storeQuoteToCsv(symbol, start, end, quotes)
     
 
-# def weaveInNextTxDayData(df):
-#     if len(df) < 2:
-#         return df
-#     df = df.sort_values(['Date'])
-#     df['nextClose'] = df['Close'].shift(-1)
-#     df = df.apply(pd.to_numeric, errors='ignore')
-#     df['nextClosePercentage'] = (df['nextClose'] - df['Close']) / df['Close']
-#     return df
-#     
-# 
-# def getAndSaveNextTxDayData(quotes):
-# #     df = pd.DataFrame(list(quotes))
-#     df = weaveInNextTxDayData(quotes)
-#     if len(df) > 1:
-#         values = df[['_id', 'nextClose', 'nextClosePercentage']].values
-#         for value in values:
-#             if pd.notnull(value[1]) and pd.notnull(value[2]):
-#                 stockMongo.updateQuoteNextClose(value[0], value[1], value[2])
-#     return df
-# 
+def weaveInNextTxDayData(df):
+    if len(df) < 2:
+        return df
+    df = df.sort_values(['Date'])
+    df['nextClose'] = df['Close'].shift(-1)
+    df = df.apply(pd.to_numeric, errors='ignore')
+    df['nextClosePercentage'] = (df['nextClose'] - df['Close']) / df['Close']
+    return df
+     
+ 
+def getAndSaveNextTxDayData(quotes):
+#     df = pd.DataFrame(list(quotes))
+    df = weaveInNextTxDayData(quotes)
+    if len(df) > 1:
+        values = df[['_id', 'nextClose', 'nextClosePercentage']].values
+        for value in values:
+            if pd.notnull(value[1]) and pd.notnull(value[2]):
+                stockMongo.updateQuoteNextClose(value[0], value[1], value[2])
+    return df
+ 
 # def initialNextTxDayData(symbol):
 #     quotes = stockMongo.findAllQuotesBySymbol(symbol['Symbol'])
 #     try:

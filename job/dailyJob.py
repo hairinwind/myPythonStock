@@ -108,8 +108,8 @@ def runDailyJob():
       
 #     start = datetime.datetime.now().strftime("%Y-%m-%d")
 #     end = datetime.datetime.now().strftime("%Y-%m-%d")
-    start = '2017-08-25'
-    end = '2017-08-25'
+    start = '2017-08-28'
+    end = '2017-08-28'
     
     # check if previous predict exists, if not, do it
     

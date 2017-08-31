@@ -5,7 +5,6 @@ from sklearn.model_selection import train_test_split
 from base import fileUtil
 from base import stockMongo
 from base.parallel import runToAllDone
-import datetime as dt
 import numpy as np
 import pandas as pd
 
@@ -156,9 +155,8 @@ def verifyQuote(machineLearningMode, startDate, endDate, symbol):
 # the data before sepDate will be used as machine learning data
 # the data after sepDate will be used for verification
 def learn(machineLearningMode, sepDate):
-#     symbols = pd.DataFrame(list(stockMongo.getAllActiveSymbols()))['Symbol'].values
-#     symbols= ['KO', 'YGE', 'MSFT', 'FB']
-    symbols = ['KO']
+    symbols = pd.DataFrame(list(stockMongo.findAllActiveSymbols()))['Symbol'].values
+#     symbols = ['KO']
     learningFunction = functools.partial(initialMachineLearning, machineLearningMode, None, sepDate)
     runToAllDone(learningFunction, [(symbol,) for symbol in symbols])        
            
@@ -170,5 +168,5 @@ def learn(machineLearningMode, sepDate):
     endDate = None
     runToAllDone(functools.partial(verifyQuote, machineLearningMode, startDate, endDate), [(symbol,) for symbol in symbols])
     
-    
-    
+
+        
