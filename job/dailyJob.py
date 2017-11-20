@@ -16,7 +16,6 @@ from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
 
 
 machineLearningModes = machineLearning.machineLearningModes
-# machineLearningModes = [machineLearningMode3()]
 
 
 def updateMachineLearingPredictionResult(symbol, df, machineLearingMode):
@@ -106,24 +105,24 @@ def now():
 def runDailyJob():
     print(now(), "daily job is started...")
       
-#     start = datetime.datetime.now().strftime("%Y-%m-%d")
-#     end = datetime.datetime.now().strftime("%Y-%m-%d")
-    start = '2017-08-28'
-    end = '2017-08-28'
+    start = datetime.datetime.now().strftime("%Y-%m-%d")
+    end = datetime.datetime.now().strftime("%Y-%m-%d")
+#     start = '2017-11-15'
+#     end = '2017-11-15'
     
     # check if previous predict exists, if not, do it
     
     symbols = list(findAllActiveSymbols())
     fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
     # fetchAndStore = lambda symbol: fetchAndStoreQuotes(symbol, start, end)
-        
+          
     runToAllDone(fetchAndStore, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=12)
-         
+           
     print(now(), "quote csv files were all downloaded...")
     loadAllQuoteFiles()
-             
+               
     time.sleep(60)
-             
+               
     print(now(), "save next tx data...")
     quotes = stockMongo.findQuotesByPeriod(start, end)
     runToAllDone(saveNextTxDayData, [(quote,) for quote in quotes])

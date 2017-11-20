@@ -2,6 +2,9 @@ import datetime as dt
 
 DATE_FORMAT = "%Y-%m-%d"
 
+def nowString():
+    return toString(dt.datetime.now())
+
 def addDays(date, days):
     date = toDate(date)
     return date + dt.timedelta(days=days)

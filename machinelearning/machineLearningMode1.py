@@ -49,7 +49,6 @@ class machineLearningMode1:
           
         df['result'] = list(map(self.determineResult, df['nextClosePercentage']))  # use nextAdjClosePercentage
         df = df.dropna(how='any')
-        print(df)
         return self.extract_X(df), machineLearningUtil.extract_y(df), df
     
     
@@ -65,6 +64,6 @@ if __name__ == '__main__':
     multiprocessing.freeze_support() 
 #     testOneClassifierAccuracy()
 #     test20ClassifierAccuracy()
-    sepDate = '2017-06-01'
+    sepDate = '2017-10-01'
     machineLearningRunner.learn(machineLearningMode1(), sepDate)
         

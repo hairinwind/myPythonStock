@@ -1,3 +1,5 @@
+use 'adj close' for 'next close' 
+
 collect history for index, like NASDAQ, DJI, S&P
 
 pickle all machine learning result

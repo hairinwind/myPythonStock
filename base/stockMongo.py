@@ -52,10 +52,17 @@ def updateSymbolQuoteSource(symbol, quoteSource):
         symbol['quoteSource'] = quoteSource
         stockDb.symbol.save(symbol)
 
+
+def updateSymbolAddNewProperty(symbol, property, propertyValue):
+    symbol = findSymbol(symbol)
+    if (symbol is not None):
+        symbol[property] = propertyValue
+        stockDb.symbol.save(symbol)
+
+
 def updateQuoteNextClose(docId, nextClose, nextClosePercentage):
     stockDb.quote.update_one({'_id':docId}, {"$set": {"nextClose":nextClose, "nextClosePercentage":nextClosePercentage}}, upsert=False)
-
-        
+    
 def findSymbol(symbol):
     return stockDb.symbol.find_one({"Symbol": symbol})
 

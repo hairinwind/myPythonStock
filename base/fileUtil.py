@@ -3,12 +3,12 @@ import pickle
 import zipfile
 
 
-QUOTES_DIR = "d:/quotes/"
+QUOTES_DIR = "H:/quotes/"
 QUOTES_ERROR_DIR = QUOTES_DIR + "error/"
 QUOTES_SUCCESS_DIR = QUOTES_DIR + "success/"
 PREDICTION_REPORT_DIR = QUOTES_DIR + "report/"
 
-MACHINE_LEARNING_PICKLE = "D:/quotes/pickle/"
+MACHINE_LEARNING_PICKLE = "H:/quotes/pickle/"
 
 
 def getSymbolCsvFileName(symbol, start, end):

@@ -1,4 +1,5 @@
 import multiprocessing
+import numpy as np
 import os
 import shutil
 
@@ -28,6 +29,8 @@ def loadCsv(csvFile):
             print(quotes['Symbol'][0])
             quotes.reset_index(inplace=True)
             quotes.drop_duplicates(subset=['Date'], keep='last', inplace=True)
+            quotes = quotes.replace('null', np.nan)
+            quotes = quotes.dropna(how='any')
             quotesJson = toDict(quotes)
             insertQuotes(quotesJson)
             print(len(quotes), ' quotes were inserted...')
@@ -45,6 +48,11 @@ def loadAllQuoteFiles():
     # csvFiles = ['INF_2017-06-21_2017-06-21.csv']
     # with multiprocessing.Pool(multiprocessing.cpu_count() - 1) as p:
     runToAllDone(loadCsv, [(csvFile,) for csvFile in csvFiles])
+    
+    
+def loadSymbolFromCsv(symbolCsv):
+    return pd.read_csv(symbolCsv, dtype={'Symbol': 'str', 'Name':'str'})
+    
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()        
