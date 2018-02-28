@@ -105,10 +105,10 @@ def now():
 def runDailyJob():
     print(now(), "daily job is started...")
       
-    start = datetime.datetime.now().strftime("%Y-%m-%d")
-    end = datetime.datetime.now().strftime("%Y-%m-%d")
-#     start = '2017-11-15'
-#     end = '2017-11-15'
+#     start = datetime.datetime.now().strftime("%Y-%m-%d")
+#     end = datetime.datetime.now().strftime("%Y-%m-%d")
+    start = '2018-02-09'
+    end = start
     
     # check if previous predict exists, if not, do it
     
@@ -116,10 +116,11 @@ def runDailyJob():
     fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
     # fetchAndStore = lambda symbol: fetchAndStoreQuotes(symbol, start, end)
           
-    runToAllDone(fetchAndStore, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=12)
+    runToAllDone(fetchAndStore, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=24)
            
     print(now(), "quote csv files were all downloaded...")
     loadAllQuoteFiles()
+    
                
     time.sleep(60)
                
@@ -139,6 +140,8 @@ def runDailyJob():
         dataHealth.dailyCheck(date.strftime("%Y-%m-%d"))
         
     print(now(), "daily job is done...")
+    import calendar
+    print(start, calendar.day_name[datetime.datetime.strptime(start, "%Y-%m-%d").weekday()])
     
     
 if __name__ == '__main__':      

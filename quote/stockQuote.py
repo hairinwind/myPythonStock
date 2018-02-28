@@ -5,6 +5,7 @@ from base import stockMongo
 from base.stockMongo import findAllActiveSymbols, findSymbol
 import datetime as dt
 import pandas as pd
+import time
 from quote.getYahooQuotes import getQuotesFromYahoo 
 
 
@@ -30,6 +31,7 @@ def retryFetchQuotes(symbol, start, end):
             print(str(e))
             print('... error to get quotes for ', symbol['Symbol'])
             retryCount += 1
+            time.sleep(1)
     return None
 
 
@@ -80,8 +82,8 @@ def getAndSaveNextTxDayData(quotes):
         
 
 if __name__ == '__main__':        
-    start = '2017-08-17'
-    end = '2017-08-17'
+    start = '2018-02-09'
+    end = '2018-02-09'
        
     '''
     symbols = findAllActiveSymbols()
@@ -91,4 +93,4 @@ if __name__ == '__main__':
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('^GSPC'), start, end)        
+    fetchAndStoreQuotes(findSymbol('SPY'), start, end)        

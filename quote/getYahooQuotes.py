@@ -40,8 +40,10 @@ def get_cookie_value(r):
 
 
 def get_page_data(symbol):
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
     url = "https://finance.yahoo.com/quote/%s/?p=%s" % (symbol, symbol)
-    r = requests.get(url)
+    print("quote URL:", url)
+    r = requests.get(url, headers=headers)
     cookie = get_cookie_value(r)
     # lines = r.text.encode('utf-8').strip().replace('}', '\n')
     lines = r.content.strip().decode("utf-8").replace('}', '\n')

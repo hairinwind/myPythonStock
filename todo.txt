@@ -1,3 +1,5 @@
+check error folder and fix the error
+
 use 'adj close' for 'next close' 
 
 collect history for index, like NASDAQ, DJI, S&P
