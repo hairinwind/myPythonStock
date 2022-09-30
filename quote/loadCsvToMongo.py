@@ -26,14 +26,14 @@ def loadCsv(csvFile):
     try: 
         quotes = pd.read_csv(getQuotesCsvFileFullPath(csvFile), dtype={'Symbol': 'str'})
         if isDataFrameValid(quotes):
-            print(quotes['Symbol'][0])
+#             print(quotes['Symbol'][0])
             quotes.reset_index(inplace=True)
             quotes.drop_duplicates(subset=['Date'], keep='last', inplace=True)
             quotes = quotes.replace('null', np.nan)
             quotes = quotes.dropna(how='any')
             quotesJson = toDict(quotes)
             insertQuotes(quotesJson)
-            print(len(quotes), ' quotes were inserted...')
+#             print(len(quotes), ' quotes were inserted...')
             fileUtil.archiveQuoteFileToZip(fileUtil.QUOTES_SUCCESS_DIR, getQuotesCsvFileFullPath(csvFile))
         else:
             moveQuotesCsvFile(csvFile, fileUtil.QUOTES_ERROR_DIR)

@@ -23,9 +23,9 @@ def checkAndUpdate(symbol, date=dt.datetime.now()):
         if "nextClose" not in quotes[1] or "nextClosePercentage" not in quotes[1] or quotes[1]["nextClose"] is None or quotes[1]["nextClosePercentage"] is None :
             quotes[1]['nextClose'] = quotes[0]['Close']
             quotes[1]['nextClosePercentage'] = (quotes[0]['Close'] - quotes[1]['Close']) / quotes[1]['Close']
-            print('the nextClose/nextClosePercentage is Null... ')
-            print(quotes)
-            print('...')
+            # print('the nextClose/nextClosePercentage is Null... ')
+            # print(quotes)
+            # print('...')
 #             stockMongo.updateQuoteNextClose(quotes[1]["_id"], quotes[1]['nextClose'], quotes[1]['nextClosePercentage'])
 
 def isPreviousNextCloseUpdated(date):

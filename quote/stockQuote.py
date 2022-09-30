@@ -6,11 +6,16 @@ from base.stockMongo import findAllActiveSymbols, findSymbol
 import datetime as dt
 import pandas as pd
 import time
-from quote.getYahooQuotes import getQuotesFromYahoo 
+from quote.getYahooQuotes import getQuotesFromYahoo, get_cookie_crumb,\
+    getQuotesWithCookieFromYahoo
 
 
 def getQuotes(symbol, start, end):
     df = getQuotesFromYahoo(symbol['Symbol'], start, end)
+    return df
+
+def getQuotesWithCookie(symbol, cookie, crumb, start, end):
+    df = getQuotesWithCookieFromYahoo(symbol['Symbol'], cookie, crumb, start, end)
     return df
     
 def toDict(df):
@@ -25,7 +30,7 @@ def retryFetchQuotes(symbol, start, end):
     retryCount = 0
     while retryCount < 5:
         try:
-            return getQuotes(symbol, start, end)
+            return 
         except Exception as e:
             print(type(e))
             print(str(e))
@@ -37,15 +42,19 @@ def retryFetchQuotes(symbol, start, end):
 
 def storeQuoteToCsv(symbol, start, end, quotes):
     if (quotes is None):
-        print(symbol['Symbol'], 'does not have any quote in the period...')
+#         print(symbol['Symbol'], 'does not have any quote in the period...')
+        pass
     else:
         fileUtil.saveQuotesToCsv(symbol['Symbol'], quotes, start, end)
 
 def fetchAndStoreQuotes(symbol, start='1900-01-01', end='2100-12-31'):
-    quotes = retryFetchQuotes(symbol, start, end)
+    quotes = getQuotes(symbol, start, end)
     storeQuoteToCsv(symbol, start, end, quotes)
     
-
+def fetchWithCookieAndStoreQuotes(symbol, cookie='', crumb='', start='1900-01-01', end='2100-12-31'):
+    quotes = getQuotesWithCookie(symbol, cookie, crumb, start, end)
+    storeQuoteToCsv(symbol, start, end, quotes)    
+    
 def weaveInNextTxDayData(df):
     if len(df) < 2:
         return df
@@ -93,4 +102,7 @@ if __name__ == '__main__':
         print(symbol['Symbol'])
         fetchAndStoreQuotes(symbol, start, end)
     '''
-    fetchAndStoreQuotes(findSymbol('SPY'), start, end)        
+    # fetchAndStoreQuotes(findSymbol('SPY'), start, end)  
+    
+    cookie, crumb = get_cookie_crumb('SPY')      
+    fetchWithCookieAndStoreQuotes(findSymbol('BABA'), cookie, crumb, start, end)

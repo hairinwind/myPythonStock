@@ -103,7 +103,7 @@ def saveAccuracy(machineLearningMode, startDate, endDate, symbol):
 
 def quotePredict(machineLearningMode, symbol, X, dates): 
     if X is None or len(X) == 0 :
-        print('no featureset data for ', symbol)
+#         print('no featureset data for ', symbol)
         return
     
     ml_data = fileUtil.loadPickle(getPickleName(symbol, machineLearningMode.MODE))

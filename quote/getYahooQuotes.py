@@ -36,7 +36,8 @@ def find_crumb_store(lines):
 
 
 def get_cookie_value(r):
-    return {'B': r.cookies['B']}
+    # return {'B': r.cookies['B']}
+    return r.cookies.get_dict(domain='.yahoo.com')
 
 
 def get_page_data(symbol):
@@ -44,6 +45,7 @@ def get_page_data(symbol):
     url = "https://finance.yahoo.com/quote/%s/?p=%s" % (symbol, symbol)
     print("quote URL:", url)
     r = requests.get(url, headers=headers)
+    print(r.cookies.get_dict(domain='.yahoo.com'))
     cookie = get_cookie_value(r)
     # lines = r.text.encode('utf-8').strip().replace('}', '\n')
     lines = r.content.strip().decode("utf-8").replace('}', '\n')
@@ -62,7 +64,7 @@ def get_cookie_crumb(symbol):
 
 def get_data(symbol, start_date, end_date, cookie, crumb):
     url = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%s&period2=%s&interval=1d&events=history&crumb=%s" % (symbol, start_date, end_date, crumb)
-    print(url)
+    # print(url)
     response = requests.get(url, cookies=cookie)
     data = []
     for block in response.iter_lines():
@@ -89,15 +91,19 @@ def parseDate(dateStr, hour):
     return date.replace(hour=hour)
 
 def getQuotesFromYahooInternal(symbol, start, end):
+    cookie, crumb = get_cookie_crumb(symbol)
+    return getQuotesWithCookieFromYahooInternal(symbol, cookie, crumb, start, end)
+    
+
+def getQuotesWithCookieFromYahooInternal(symbol, cookie, crumb, start, end):
     start_date = 0
     end_date = get_now_epoch()
     if start is not None:
         start_date = getTimeNumber(parseDate(start, 7))
     if end is not None:
         end_date = getTimeNumber(parseDate(end, 17))
-    cookie, crumb = get_cookie_crumb(symbol)
-    print('symbol', symbol)
-    print('crumb', crumb)
+#     print('symbol', symbol)
+#     print('crumb', crumb)
     df = get_data(symbol, start_date, end_date, cookie, crumb)
     df.set_index(['Date'], inplace=True)
     return df
@@ -113,6 +119,15 @@ def getQuotesFromYahoo(symbol, start, end):
         except Exception as e:
             print(str(e))
             retryCount += 1
+            
+def getQuotesWithCookieFromYahoo(symbol, cookie, crumb, start, end):
+    retryCount = 0
+    while retryCount < 5 :
+        try:
+            return getQuotesWithCookieFromYahooInternal(symbol, cookie, crumb, start, end)
+        except Exception as e:
+            print(str(e))
+            retryCount += 1            
         
 if __name__ == '__main__':
     # If we have at least one parameter go ahead and loop overa all the parameters assuming they are symbols

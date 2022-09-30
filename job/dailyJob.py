@@ -12,7 +12,8 @@ from machinelearning import machineLearningRunner
 import pandas as pd
 from quote import dataHealth
 from quote.loadCsvToMongo import loadAllQuoteFiles
-from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData
+from quote.stockQuote import fetchAndStoreQuotes, getAndSaveNextTxDayData, fetchWithCookieAndStoreQuotes
+from quote.getYahooQuotes import get_cookie_crumb
 
 
 machineLearningModes = machineLearning.machineLearningModes
@@ -42,13 +43,13 @@ def predictAndSaveForOneMode(machineLearingMode, date, symbol):
             return
         
         for prediction in predictions:
-            print(prediction[0])
-            print(prediction[1])
+#             print(prediction[0])
+#             print(prediction[1])
             predictionResult = prediction[0]
             predictionDate = prediction[1]
             predictObj = {"Symbol":symbol['Symbol'], "Date":predictionDate, "Prediction":int(predictionResult), "Mode":machineLearingMode.MODE}
-            print('save prediciton object...')
-            print(predictObj)
+            # print('save prediciton object...')
+            # print(predictObj)
             savePrediction(predictObj)
     except Exception as e:
         print("error happened when predictAndSaveForOneMode...")
@@ -103,45 +104,51 @@ def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def runDailyJob():
+    perfStart = time.perf_counter()
     print(now(), "daily job is started...")
       
 #     start = datetime.datetime.now().strftime("%Y-%m-%d")
 #     end = datetime.datetime.now().strftime("%Y-%m-%d")
-    start = '2018-02-09'
+    start = '2018-03-30'
     end = start
     
     # check if previous predict exists, if not, do it
     
+    cookie, crumb = get_cookie_crumb('SPY')
+     
     symbols = list(findAllActiveSymbols())
-    fetchAndStore = functools.partial(fetchAndStoreQuotes, start=start, end=end)
+    fetchAndStore = functools.partial(fetchWithCookieAndStoreQuotes, cookie=cookie, crumb=crumb, start=start, end=end)
     # fetchAndStore = lambda symbol: fetchAndStoreQuotes(symbol, start, end)
-          
-    runToAllDone(fetchAndStore, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=24)
            
+    runToAllDone(fetchAndStore, [(symbol,) for symbol in symbols], NUMBER_OF_PROCESSES=12)
+            
     print(now(), "quote csv files were all downloaded...")
     loadAllQuoteFiles()
-    
-               
+     
+                
     time.sleep(60)
-               
+                
     print(now(), "save next tx data...")
     quotes = stockMongo.findQuotesByPeriod(start, end)
     runToAllDone(saveNextTxDayData, [(quote,) for quote in quotes])
-          
+           
     print(now(), 'starting prediction for next Tx day')
     runToAllDone(predictAndSave, [(symbol, start) for symbol in symbols])  # , NUMBER_OF_PROCESSES=1 
-                 
+                  
     print(now(), 'generating predict report')
     predictReport() 
-        
+         
     # verify
     for date in pd.date_range(datetime.datetime.strptime(start, "%Y-%m-%d"), datetime.datetime.strptime(end, "%Y-%m-%d")):
         print('check', date)
         dataHealth.dailyCheck(date.strftime("%Y-%m-%d"))
-        
+         
     print(now(), "daily job is done...")
     import calendar
     print(start, calendar.day_name[datetime.datetime.strptime(start, "%Y-%m-%d").weekday()])
+    
+    perfEnd = time.perf_counter()
+    print('time consumed:', format((perfEnd - perfStart)/60, "0.2f") + " minutes")
     
     
 if __name__ == '__main__':      
